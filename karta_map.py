@@ -17,7 +17,15 @@ def get_axes_extents(ax, ax_crs, crs=karta.crs.SphericalEarth):
     ul = transform(xl, yt)
     return karta.Polygon([ll, lr, ur, ul], crs=crs)
 
-def _segment(ax, x0, x1, y0, y1, n, crs, **kw):
+def _segment(ax,
+             x0: float, 
+             x1: float,
+             y0: float,
+             y1: float,
+             n: int,
+             crs: karta.crs.CRS, **kw):
+    """ Convert a line between two points in geographical space into a
+    (segmented) curve between those points in a projected space. """
     x = np.linspace(x0, x1, n)
     y = np.linspace(y0, y1, n)
     xp, yp = crs.project(x, y)
@@ -51,7 +59,7 @@ def find_intersection(xa, ya, xb, yb, crsa, crsb):
     """ Return the point in *crs_a* on the line xa, ya that intersects xb, yb on *crs_b*. """
 
 
-def isbetween(x, a, b):
+def isbetween(x: float, a: float, b: float) -> bool:
     return (a < x < b) or (b < x < a)
 
 def froot(f, a, b):

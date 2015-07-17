@@ -5,7 +5,9 @@ import scipy.optimize
 import karta
 import numpy as np
 
-def get_axes_extents(ax, ax_crs, crs=karta.crs.SphericalEarth):
+from typing import Iterable
+
+def get_axes_extents(ax, ax_crs: karta.crs.CRS, crs=karta.crs.SphericalEarth):
     """ Get the extents of an Axes in geographical (or other) coordinates. """
     xl, xr = ax.get_xlim()
     yb, yt = ax.get_ylim()
@@ -37,7 +39,7 @@ def curve(ax, x, y, n=20, crs=karta.crs.SphericalEarth, **kw):
         segs.append(_segment(ax, x[i], x[i+1], y[i], y[i+1], n, crs, **kw))
     return segs
 
-def add_graticule(ax, xs, ys,
+def add_graticule(ax, xs: Iterable, ys: Iterable,
                   ax_crs=karta.crs.Cartesian,
                   graticule_crs=karta.crs.SphericalEarth,
                   lineargs=None):
@@ -65,7 +67,7 @@ def isbetween(x: float, a: float, b: float) -> bool:
 def froot(f, a, b):
     return scipy.optimize.brentq(f, a, b)
 
-def label_ticks(ax, xs, ys,
+def label_ticks(ax, xs: Iterable, ys: Iterable,
                 ax_crs=karta.crs.Cartesian,
                 graticule_crs=karta.crs.SphericalEarth,
                 textargs=None, tickargs=None,

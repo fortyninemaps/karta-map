@@ -32,6 +32,14 @@ class TestMappingFunctions(unittest.TestCase):
         self.assertAlmostEqual(bbox.vertices[3][1], 71.94728, places=4)
         return
 
+    def test_isbetween(self):
+        self.assertTrue(km.isbetween(3, 1, 4))
+        self.assertTrue(km.isbetween(3.2, 1.0, 4.0))
+        self.assertTrue(km.isbetween(-2.7, -5.0, -1.0))
+        self.assertFalse(km.isbetween(-5.0, -5.0, -1.0))
+        self.assertFalse(km.isbetween(1.0, 1.0, 4.0))
+        return
+
 if __name__ == "__main__":
     unittest.main()
 

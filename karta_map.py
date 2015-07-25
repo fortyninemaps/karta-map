@@ -6,6 +6,8 @@ import karta
 import numpy as np
 
 from typing import Iterable
+from matplotlib import patches
+from matplotlib.pyplot import gca, Axes
 
 def get_axes_extents(ax, ax_crs: karta.crs.CRS, crs=karta.crs.SphericalEarth):
     """ Get the extents of an Axes in geographical (or other) coordinates. """
@@ -162,4 +164,50 @@ def label_ticks(ax, xs: Iterable, ys: Iterable,
     # ax.set_xticklabels(xs)
     # ax.set_yticklabels(ys)
     return
+
+def plot(geoms: Iterable, *args, ax=None, crs=None, **kwargs):
+    """ Metafunction that dispatches to the correct plotting routine. """
+
+    ax = gca()
+
+    if isinstance(geoms, list):
+        if geoms[0]._geotype == "Point":
+            ret = plot_points(geoms, *args, ax=ax, crs=crs, **kwargs)
+        elif geoms[0]._geotype == "Multipoint":
+            ret = plot_multipoints(geoms, *args, ax=ax, crs=crs, **kwargs)
+        elif geoms[0]._geotype == "Line":
+            ret = plot_lines(geoms, *args, ax=ax, crs=crs, **kwargs)
+        elif geoms[0]._geotype == "Polygon":
+            ret = plot_polygons(geoms, ax=ax, crs=crs, **kwargs)
+        else:
+            raise TypeError("Invalid geotype")
+    else:
+        if geoms._geotype == "Point":
+            ret = plot_point(geoms, *args, ax=ax, crs=crs, **kwargs)
+        elif geoms._geotype == "Multipoint":
+            ret = plot_multipoint(geoms, *args, ax=ax, crs=crs, **kwargs)
+        elif geoms._geotype == "Line":
+            ret = plot_line(geoms, *args, ax=ax, crs=crs, **kwargs)
+        elif geoms._geotype == "Polygon":
+            ret = plot_polygon(geoms, ax=ax, crs=crs, **kwargs)
+        else:
+            raise TypeError("Invalid geotype")
+
+    return ret
+
+def plot_line(geom, ax, *args, crs=None, **kwargs):
+    x, y = geom.get_coordinate_lists(crs=crs)
+    return ax.plot(x, y, *args, **kwargs)
+
+def plot_lines(geoms, ax, *args, crs=None, **kwargs):
+    return [plot_line(geom, ax, *args, crs=crs, **kwargs) for geom in geoms]
+
+def plot_polygon(geom, ax, crs=None, **kwargs):
+    p = patches.Polygon(geom.get_vertices(crs=crs), **kwargs)
+    ax.add_patch(p)
+    return p
+
+def plot_polygons(geoms: Iterable, ax, crs=None, **kwargs):
+    """ Plot Polygon geometries, projected to the coordinate system `crs` """
+    return [plot_polygon(geom, ax, crs=crs, **kwargs) for geom in geoms]
 

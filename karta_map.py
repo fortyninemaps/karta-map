@@ -104,7 +104,7 @@ def froot(f, a, b):
     return scipy.optimize.brentq(f, a, b)
 
 def label_ticks(ax, xs: Iterable, ys: Iterable,
-                ax_crs=karta.crs.Cartesian,
+                map_crs=karta.crs.Cartesian,
                 graticule_crs=karta.crs.SphericalEarth,
                 textargs=None, tickargs=None,
                 x_suffix="\u00b0E", y_suffix="\u00b0N"):
@@ -116,7 +116,7 @@ def label_ticks(ax, xs: Iterable, ys: Iterable,
         tickargs = dict(marker="+", mew=2, ms=14, mfc="k", mec="k", ls="none")
 
     # Find tick locations
-    bbox = get_axes_extents(ax, ax_crs, graticule_crs)  # bottom, right, top, left
+    bbox = get_axes_extents(ax, map_crs, graticule_crs)  # bottom, right, top, left
 
     ticks = dict(xticks=[], yticks=[])
 
@@ -124,8 +124,8 @@ def label_ticks(ax, xs: Iterable, ys: Iterable,
     ymin, ymax = sorted(ax.get_ylim())
 
     tickproj = graticule_crs.project
-    axproj = ax_crs.project
-    #ax_inv = lambda x, y: ax_crs.project(x, y, inverse=True)
+    axproj = map_crs.project
+    #ax_inv = lambda x, y: map_crs.project(x, y, inverse=True)
 
     # bottom spine
     for x in xs:
@@ -202,7 +202,8 @@ def label_ticks(ax, xs: Iterable, ys: Iterable,
 def plot(geoms: Iterable, *args, ax=None, crs=None, **kwargs):
     """ Metafunction that dispatches to the correct plotting routine. """
 
-    ax = gca()
+    if ax is None:
+        ax = gca()
 
     if isinstance(geoms, list):
         if geoms[0]._geotype == "Point":
@@ -229,19 +230,51 @@ def plot(geoms: Iterable, *args, ax=None, crs=None, **kwargs):
 
     return ret
 
-def plot_line(geom, ax, *args, crs=None, **kwargs):
+def scale_to_geometry(geom, ax):
+    x0, y0, x1, y1 = geom.bbox
+    if ax._autoscaleXon:
+        ax.set_xlim(x0, x1)
+    if ax._autoscaleYon:
+        ax.set_ylim(y0, y1)
+    return
+
+def plot_line(geom, *args, crs=None, **kwargs):
+    """ Plot a Line geometry, projected to the coordinate system `crs` """
+    if isinstance(args[0], Axes):
+        ax = args[0]
+        args = args[1:]
+    else:
+        ax = gca()
     x, y = geom.get_coordinate_lists(crs=crs)
     return ax.plot(x, y, *args, **kwargs)
 
-def plot_lines(geoms, ax, *args, crs=None, **kwargs):
+def plot_lines(geoms, *args, crs=None, **kwargs):
+    """ Plot Line geometries, projected to the coordinate system `crs` """
+    if isinstance(args[0], Axes):
+        ax = args[0]
+        args = args[1:]
+    else:
+        ax = gca()
     return [plot_line(geom, ax, *args, crs=crs, **kwargs) for geom in geoms]
 
-def plot_polygon(geom, ax, crs=None, **kwargs):
+def plot_polygon(geom, *args, crs=None, **kwargs):
+    """ Plot a Polygon geometry, projected to the coordinate system `crs` """
+    if isinstance(args[0], Axes):
+        ax = args[0]
+        args = args[1:]
+    else:
+        ax = gca()
     p = patches.Polygon(geom.get_vertices(crs=crs), **kwargs)
     ax.add_patch(p)
+    scale_to_geometry(geom, ax)
     return p
 
-def plot_polygons(geoms: Iterable, ax, crs=None, **kwargs):
+def plot_polygons(geoms: Iterable, *args, crs=None, **kwargs):
     """ Plot Polygon geometries, projected to the coordinate system `crs` """
+    if isinstance(args[0], Axes):
+        ax = args[0]
+        args = args[1:]
+    else:
+        ax = gca()
     return [plot_polygon(geom, ax, crs=crs, **kwargs) for geom in geoms]
 

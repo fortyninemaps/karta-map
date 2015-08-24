@@ -1,5 +1,5 @@
 """ Karta-map is a module that depends on the karta package and adds some
-useful mapping functions. """
+useful functions for drawing maps with matplotlib. """
 
 import scipy.optimize
 import karta
@@ -22,20 +22,6 @@ def get_axes_extents(ax, ax_crs: karta.crs.CRS, crs=karta.crs.SphericalEarth):
     ul = transform(xl, yt)
     return Polygon([ll, lr, ur, ul], crs=crs)
 
-# def _segment(ax,
-#              x0: float, 
-#              x1: float,
-#              y0: float,
-#              y1: float,
-#              n: int,
-#              crs: karta.crs.CRS, **kw):
-#     """ Convert a line between two points in geographical space into a
-#     (segmented) curve between those points in a projected space. """
-#     x = np.linspace(x0, x1, n)
-#     y = np.linspace(y0, y1, n)
-#     xp, yp = crs.project(x, y)
-#     return ax.plot(xp, yp, **kw)
-
 def geodesic(pt0: Point, pt1: Point, n=20):
     """ Return a Line representing the geodesic path between two points, approximated by `n` segments. """
     i = 0
@@ -50,18 +36,12 @@ def geodesic(pt0: Point, pt1: Point, n=20):
         i += 1
     return Line(points)
 
-# def curve(ax, x, y, n=20, crs=karta.crs.SphericalEarth, **kw):
-#     segs = []
-#     for i in range(len(x)-1):
-#         segs.append(_segment(ax, x[i], x[i+1], y[i], y[i+1], n, crs, **kw))
-#     return segs
-
 def add_graticule(ax, xs: Iterable, ys: Iterable,
                   map_crs=karta.crs.Cartesian,
                   graticule_crs=karta.crs.SphericalEarth,
                   lineargs=None):
-    """ Add a map graticule, with intervals in `graticule_crs` projected onto a map projected with `map_crs` """
-
+    """ Add a map graticule, with intervals in `graticule_crs` projected onto a
+    map projected with `map_crs` """
     if lineargs is None:
         lineargs = dict(color="k", linewidth=0.5)
 
@@ -125,7 +105,6 @@ def label_ticks(ax, xs: Iterable, ys: Iterable,
 
     tickproj = graticule_crs.project
     axproj = map_crs.project
-    #ax_inv = lambda x, y: map_crs.project(x, y, inverse=True)
 
     # bottom spine
     for x in xs:
@@ -182,7 +161,6 @@ def label_ticks(ax, xs: Iterable, ys: Iterable,
                                     "{0}{1}".format(y, y_suffix)))
 
     # Update map
-
     for pt in ticks["xticks"]:
         ax.plot(pt[0], pt[1], **tickargs)
         ax.text(pt[0], pt[1], pt[2], **textargs)
@@ -194,9 +172,6 @@ def label_ticks(ax, xs: Iterable, ys: Iterable,
     # # Apply to the Axes
     ax.set_xticks([])
     ax.set_yticks([])
-
-    # ax.set_xticklabels(xs)
-    # ax.set_yticklabels(ys)
     return
 
 def plot(geoms: Iterable, *args, ax=None, crs=None, **kwargs):
@@ -240,7 +215,7 @@ def scale_to_geometry(geom, ax):
 
 def plot_line(geom, *args, crs=None, **kwargs):
     """ Plot a Line geometry, projected to the coordinate system `crs` """
-    if isinstance(args[0], Axes):
+    if (len(args) != 0) and isinstance(args[0], Axes):
         ax = args[0]
         args = args[1:]
     else:
@@ -250,7 +225,7 @@ def plot_line(geom, *args, crs=None, **kwargs):
 
 def plot_lines(geoms, *args, crs=None, **kwargs):
     """ Plot Line geometries, projected to the coordinate system `crs` """
-    if isinstance(args[0], Axes):
+    if (len(args) != 0) and isinstance(args[0], Axes):
         ax = args[0]
         args = args[1:]
     else:
@@ -259,7 +234,7 @@ def plot_lines(geoms, *args, crs=None, **kwargs):
 
 def plot_polygon(geom, *args, crs=None, **kwargs):
     """ Plot a Polygon geometry, projected to the coordinate system `crs` """
-    if isinstance(args[0], Axes):
+    if (len(args) != 0) and isinstance(args[0], Axes):
         ax = args[0]
         args = args[1:]
     else:
@@ -271,7 +246,7 @@ def plot_polygon(geom, *args, crs=None, **kwargs):
 
 def plot_polygons(geoms: Iterable, *args, crs=None, **kwargs):
     """ Plot Polygon geometries, projected to the coordinate system `crs` """
-    if isinstance(args[0], Axes):
+    if (len(args) != 0) and isinstance(args[0], Axes):
         ax = args[0]
         args = args[1:]
     else:

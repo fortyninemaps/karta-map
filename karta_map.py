@@ -3,6 +3,7 @@ useful mapping functions. """
 
 import scipy.optimize
 import karta
+from karta import Point, Multipoint, Line, Polygon
 import numpy as np
 
 from typing import Iterable
@@ -19,44 +20,77 @@ def get_axes_extents(ax, ax_crs: karta.crs.CRS, crs=karta.crs.SphericalEarth):
     lr = transform(xr, yb)
     ur = transform(xr, yt)
     ul = transform(xl, yt)
-    return karta.Polygon([ll, lr, ur, ul], crs=crs)
+    return Polygon([ll, lr, ur, ul], crs=crs)
 
-def _segment(ax,
-             x0: float, 
-             x1: float,
-             y0: float,
-             y1: float,
-             n: int,
-             crs: karta.crs.CRS, **kw):
-    """ Convert a line between two points in geographical space into a
-    (segmented) curve between those points in a projected space. """
-    x = np.linspace(x0, x1, n)
-    y = np.linspace(y0, y1, n)
-    xp, yp = crs.project(x, y)
-    return ax.plot(xp, yp, **kw)
+# def _segment(ax,
+#              x0: float, 
+#              x1: float,
+#              y0: float,
+#              y1: float,
+#              n: int,
+#              crs: karta.crs.CRS, **kw):
+#     """ Convert a line between two points in geographical space into a
+#     (segmented) curve between those points in a projected space. """
+#     x = np.linspace(x0, x1, n)
+#     y = np.linspace(y0, y1, n)
+#     xp, yp = crs.project(x, y)
+#     return ax.plot(xp, yp, **kw)
 
-def curve(ax, x, y, n=20, crs=karta.crs.SphericalEarth, **kw):
-    segs = []
-    for i in range(len(x)-1):
-        segs.append(_segment(ax, x[i], x[i+1], y[i], y[i+1], n, crs, **kw))
-    return segs
+def geodesic(pt0: Point, pt1: Point, n=20):
+    """ Return a Line representing the geodesic path between two points, approximated by `n` segments. """
+    i = 0
+    cur_pt = pt0
+    points = [cur_pt]
+    while i != n:
+        remaining_dist = cur_pt.distance(pt1)
+        step_dist = remaining_dist / (n-i)
+        az = cur_pt.azimuth(pt1)
+        cur_pt = cur_pt.walk(step_dist, az)
+        points.append(cur_pt)
+        i += 1
+    return Line(points)
+
+# def curve(ax, x, y, n=20, crs=karta.crs.SphericalEarth, **kw):
+#     segs = []
+#     for i in range(len(x)-1):
+#         segs.append(_segment(ax, x[i], x[i+1], y[i], y[i+1], n, crs, **kw))
+#     return segs
 
 def add_graticule(ax, xs: Iterable, ys: Iterable,
-                  ax_crs=karta.crs.Cartesian,
+                  map_crs=karta.crs.Cartesian,
                   graticule_crs=karta.crs.SphericalEarth,
                   lineargs=None):
+    """ Add a map graticule, with intervals in `graticule_crs` projected onto a map projected with `map_crs` """
 
     if lineargs is None:
         lineargs = dict(color="k", linewidth=0.5)
 
-    bbox = get_axes_extents(ax, ax_crs, graticule_crs)
+    bbox = get_axes_extents(ax, map_crs, graticule_crs)
     x, y = bbox.get_coordinate_lists(crs=graticule_crs)
     xmin, xmax = min(x), max(x)
     ymin, ymax = min(y), max(y)
     for i in range(len(xs)):
-        curve(ax, (xs[i], xs[i]), (ymin, ymax), crs=ax_crs, **lineargs)
+        _line = Line([(xs[i], ymin), (xs[i], ymax)], crs=map_crs)
+        plot(_line, ax=ax, **lineargs)
     for i in range(len(ys)):
-        curve(ax, (xmin, xmax), (ys[i], ys[i]), crs=ax_crs, **lineargs)
+        _line = Line([(xmin, ys[i]), (xmax, ys[i])], crs=map_crs)
+        plot(_line, ax=ax, **lineargs)
+    return
+
+def add_graticule_contour(ax, xs, ys, map_crs, graticule_crs, nx=100, ny=100):
+    xmin, xmax = ax.get_xlim()
+    ymin, ymax = ax.get_ylim()
+    xmap = np.linspace(xmin, xmax, nx)
+    ymap = np.linspace(ymin, ymax, ny)
+    Xm, Ym = np.meshgrid(xmap, ymap)
+    Xg, Yg = graticule_crs.project(*map_crs.project(Xm, Ym, inverse=True))
+    ax.contour(Xm, Ym, abs(Xg), levels=xs, colors="k", linestyles="-")
+    ax.contour(Xm, Ym, Yg, levels=ys, colors="k", linestyles="-")
+    
+    Xg_pm = Xg
+    Xg_pm[(abs(Xg)>10) & (abs(Xg)<170)] = np.nan
+    ax.contour(Xm, Ym, Xg_pm, levels=[0.0], colors="k", linestyles="-")
+    
     return
 
 def find_intersection(xa, ya, xb, yb, crsa, crsb):

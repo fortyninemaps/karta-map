@@ -205,8 +205,8 @@ def plot(geoms: Iterable, *args, ax=None, crs=None, **kwargs):
 
     return ret
 
-def scale_to_geometry(geom, ax):
-    x0, y0, x1, y1 = geom.bbox
+def scale_to_geometry(geom, ax, crs):
+    x0, x1, y0, y1 = geom.get_extents(crs=crs)
     if ax._autoscaleXon:
         ax.set_xlim(x0, x1)
     if ax._autoscaleYon:
@@ -241,7 +241,7 @@ def plot_polygon(geom, *args, crs=None, **kwargs):
         ax = gca()
     p = patches.Polygon(geom.get_vertices(crs=crs), **kwargs)
     ax.add_patch(p)
-    scale_to_geometry(geom, ax)
+    scale_to_geometry(geom, ax, crs=crs)
     return p
 
 def plot_polygons(geoms: Iterable, *args, crs=None, **kwargs):

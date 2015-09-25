@@ -51,10 +51,10 @@ def add_graticule(ax, xs: Iterable, ys: Iterable,
     ymin, ymax = min(y), max(y)
     for i in range(len(xs)):
         _line = Line([(xs[i], ymin), (xs[i], ymax)], crs=map_crs)
-        plot(_line, ax=ax, **lineargs)
+        plot(_line, ax, **lineargs)
     for i in range(len(ys)):
         _line = Line([(xmin, ys[i]), (xmax, ys[i])], crs=map_crs)
-        plot(_line, ax=ax, **lineargs)
+        plot(_line, ax, **lineargs)
     return
 
 def add_graticule_contour(ax, xs, ys, map_crs, graticule_crs, nx=100, ny=100):
@@ -174,32 +174,29 @@ def label_ticks(ax, xs: Iterable, ys: Iterable,
     ax.set_yticks([])
     return
 
-def plot(geoms: Iterable, *args, ax=None, crs=None, **kwargs):
+def plot(geoms: Iterable, *args, crs=None, **kwargs):
     """ Metafunction that dispatches to the correct plotting routine. """
-
-    if ax is None:
-        ax = gca()
 
     if isinstance(geoms, list):
         if geoms[0]._geotype == "Point":
-            ret = plot_points(geoms, *args, ax=ax, crs=crs, **kwargs)
+            ret = plot_points(geoms, *args, crs=crs, **kwargs)
         elif geoms[0]._geotype == "Multipoint":
-            ret = plot_multipoints(geoms, *args, ax=ax, crs=crs, **kwargs)
+            ret = plot_multipoints(geoms, *args, crs=crs, **kwargs)
         elif geoms[0]._geotype == "Line":
-            ret = plot_lines(geoms, *args, ax=ax, crs=crs, **kwargs)
+            ret = plot_lines(geoms, *args, crs=crs, **kwargs)
         elif geoms[0]._geotype == "Polygon":
-            ret = plot_polygons(geoms, ax=ax, crs=crs, **kwargs)
+            ret = plot_polygons(geoms, crs=crs, **kwargs)
         else:
             raise TypeError("Invalid geotype")
     else:
         if geoms._geotype == "Point":
-            ret = plot_point(geoms, *args, ax=ax, crs=crs, **kwargs)
+            ret = plot_point(geoms, *args, crs=crs, **kwargs)
         elif geoms._geotype == "Multipoint":
-            ret = plot_multipoint(geoms, *args, ax=ax, crs=crs, **kwargs)
+            ret = plot_multipoint(geoms, *args, crs=crs, **kwargs)
         elif geoms._geotype == "Line":
-            ret = plot_line(geoms, *args, ax=ax, crs=crs, **kwargs)
+            ret = plot_line(geoms, *args, crs=crs, **kwargs)
         elif geoms._geotype == "Polygon":
-            ret = plot_polygon(geoms, ax=ax, crs=crs, **kwargs)
+            ret = plot_polygon(geoms, crs=crs, **kwargs)
         else:
             raise TypeError("Invalid geotype")
 
@@ -215,7 +212,7 @@ def scale_to_geometry(geom, ax, crs):
 
 def plot_line(geom, *args, crs=None, **kwargs):
     """ Plot a Line geometry, projected to the coordinate system `crs` """
-    if (len(args) != 0) and isinstance(args[0], Axes):
+    if (len(args) != 0) and hasattr(args[0], "plot"):
         ax = args[0]
         args = args[1:]
     else:
@@ -225,7 +222,7 @@ def plot_line(geom, *args, crs=None, **kwargs):
 
 def plot_lines(geoms, *args, crs=None, **kwargs):
     """ Plot Line geometries, projected to the coordinate system `crs` """
-    if (len(args) != 0) and isinstance(args[0], Axes):
+    if (len(args) != 0) and hasattr(args[0], "plot"):
         ax = args[0]
         args = args[1:]
     else:
@@ -234,7 +231,7 @@ def plot_lines(geoms, *args, crs=None, **kwargs):
 
 def plot_polygon(geom, *args, crs=None, **kwargs):
     """ Plot a Polygon geometry, projected to the coordinate system `crs` """
-    if (len(args) != 0) and isinstance(args[0], Axes):
+    if (len(args) != 0) and hasattr(args[0], "plot"):
         ax = args[0]
         args = args[1:]
     else:
@@ -246,7 +243,7 @@ def plot_polygon(geom, *args, crs=None, **kwargs):
 
 def plot_polygons(geoms: Iterable, *args, crs=None, **kwargs):
     """ Plot Polygon geometries, projected to the coordinate system `crs` """
-    if (len(args) != 0) and isinstance(args[0], Axes):
+    if (len(args) != 0) and hasattr(args[0], "plot"):
         ax = args[0]
         args = args[1:]
     else:

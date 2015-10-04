@@ -10,8 +10,8 @@ from typing import Iterable
 from matplotlib import patches
 from matplotlib.pyplot import gca, Axes
 
-def get_axes_extents(ax, ax_crs: karta.crs.CRS, crs=karta.crs.SphericalEarth):
-    """ Get the extents of an Axes in geographical (or other) coordinates. """
+def get_axes_extent(ax, ax_crs: karta.crs.CRS, crs=karta.crs.SphericalEarth):
+    """ Get the extent of an Axes in geographical (or other) coordinates. """
     xl, xr = ax.get_xlim()
     yb, yt = ax.get_ylim()
     
@@ -45,7 +45,7 @@ def add_graticule(ax, xs: Iterable, ys: Iterable,
     if lineargs is None:
         lineargs = dict(color="k", linewidth=0.5)
 
-    bbox = get_axes_extents(ax, map_crs, graticule_crs)
+    bbox = get_axes_extent(ax, map_crs, graticule_crs)
     x, y = bbox.get_coordinate_lists(crs=graticule_crs)
     xmin, xmax = min(x), max(x)
     ymin, ymax = min(y), max(y)
@@ -96,7 +96,7 @@ def label_ticks(ax, xs: Iterable, ys: Iterable,
         tickargs = dict(marker="+", mew=2, ms=14, mfc="k", mec="k", ls="none")
 
     # Find tick locations
-    bbox = get_axes_extents(ax, map_crs, graticule_crs)  # bottom, right, top, left
+    bbox = get_axes_extent(ax, map_crs, graticule_crs)  # bottom, right, top, left
 
     ticks = dict(xticks=[], yticks=[])
 
@@ -203,12 +203,31 @@ def plot(geoms: Iterable, *args, crs=None, **kwargs):
     return ret
 
 def scale_to_geometry(geom, ax, crs):
-    x0, x1, y0, y1 = geom.get_extents(crs=crs)
+    x0, x1, y0, y1 = geom.get_extent(crs=crs)
     if ax._autoscaleXon:
         ax.set_xlim(x0, x1)
     if ax._autoscaleYon:
         ax.set_ylim(y0, y1)
     return
+
+def plot_point(geom, *args, crs=None, **kwargs):
+    """ Plot a Line geometry, projected to the coordinate system `crs` """
+    if (len(args) != 0) and hasattr(args[0], "plot"):
+        ax = args[0]
+        args = args[1:]
+    else:
+        ax = gca()
+    x, y = geom.get_vertex(crs=crs)
+    return ax.plot(x, y, *args, **kwargs)
+
+def plot_points(geoms, *args, crs=None, **kwargs):
+    """ Plot Line geometries, projected to the coordinate system `crs` """
+    if (len(args) != 0) and hasattr(args[0], "plot"):
+        ax = args[0]
+        args = args[1:]
+    else:
+        ax = gca()
+    return [plot_point(geom, ax, *args, crs=crs, **kwargs) for geom in geoms]
 
 def plot_line(geom, *args, crs=None, **kwargs):
     """ Plot a Line geometry, projected to the coordinate system `crs` """

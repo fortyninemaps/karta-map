@@ -2,15 +2,16 @@
 useful functions for drawing maps with matplotlib. """
 
 import scipy.optimize
-import karta
-from karta import Point, Multipoint, Line, Polygon
 import numpy as np
 
 from typing import Iterable
 from matplotlib import patches
 from matplotlib.pyplot import gca, Axes
 
-def get_axes_extent(ax, ax_crs: karta.crs.CRS, crs=karta.crs.SphericalEarth):
+from .vector import Point, Multipoint, Line, Polygon
+from . import crs
+
+def get_axes_extent(ax, ax_crs: crs.CRS, crs=crs.SphericalEarth):
     """ Get the extent of an Axes in geographical (or other) coordinates. """
     xl, xr = ax.get_xlim()
     yb, yt = ax.get_ylim()
@@ -37,8 +38,8 @@ def geodesic(pt0: Point, pt1: Point, n=20):
     return Line(points)
 
 def add_graticule(ax, xs: Iterable, ys: Iterable,
-                  map_crs=karta.crs.Cartesian,
-                  graticule_crs=karta.crs.SphericalEarth,
+                  map_crs=crs.Cartesian,
+                  graticule_crs=crs.SphericalEarth,
                   lineargs=None):
     """ Add a map graticule, with intervals in `graticule_crs` projected onto a
     map projected with `map_crs` """
@@ -84,8 +85,8 @@ def froot(f, a, b):
     return scipy.optimize.brentq(f, a, b)
 
 def label_ticks(ax, xs: Iterable, ys: Iterable,
-                map_crs=karta.crs.Cartesian,
-                graticule_crs=karta.crs.SphericalEarth,
+                map_crs=crs.Cartesian,
+                graticule_crs=crs.SphericalEarth,
                 textargs=None, tickargs=None,
                 x_suffix="\u00b0E", y_suffix="\u00b0N"):
 

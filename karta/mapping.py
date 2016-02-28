@@ -18,11 +18,10 @@ def get_axes_extent(ax, ax_crs: crs.CRS, crs=crs.SphericalEarth):
     xl, xr = ax.get_xlim()
     yb, yt = ax.get_ylim()
     
-    transform = lambda x, y: crs.project(*ax_crs.project(x, y, inverse=True))
-    ll = transform(xl, yb)
-    lr = transform(xr, yb)
-    ur = transform(xr, yt)
-    ul = transform(xl, yt)
+    ll = ax_crs.transform(crs, xl, yb)
+    lr = ax_crs.transform(crs, xr, yb)
+    ur = ax_crs.transform(crs, xr, yt)
+    ul = ax_crs.transform(crs, xl, yt)
     return Polygon([ll, lr, ur, ul], crs=crs)
 
 def geodesic(pt0: Point, pt1: Point, n=20):
@@ -66,7 +65,7 @@ def add_graticule_contour(ax, xs, ys, map_crs, graticule_crs, nx=100, ny=100):
     xmap = np.linspace(xmin, xmax, nx)
     ymap = np.linspace(ymin, ymax, ny)
     Xm, Ym = np.meshgrid(xmap, ymap)
-    Xg, Yg = graticule_crs.project(*map_crs.project(Xm, Ym, inverse=True))
+    Xg, Yg = map_crs.transform(graticule_crs, Ym, Ym)
     ax.contour(Xm, Ym, abs(Xg), levels=xs, colors="k", linestyles="-")
     ax.contour(Xm, Ym, Yg, levels=ys, colors="k", linestyles="-")
     
@@ -106,32 +105,37 @@ def label_ticks(ax, xs: Iterable, ys: Iterable,
     xmin, xmax = sorted(ax.get_xlim())
     ymin, ymax = sorted(ax.get_ylim())
 
-    tickproj = graticule_crs.project
-    axproj = map_crs.project
-
     # bottom spine
     for x in xs:
         if isbetween(x, bbox[0][0], bbox[1][0]):
-            ticks["xticks"].append((froot(lambda xt: tickproj(*axproj(xt, ymin, inverse=True))[0]-x, xmin, xmax),
+            ticks["xticks"].append((froot(lambda xt:
+                                          map_crs.transform(graticule_crs, xt, ymin)[0]-x, 
+                                          xmin, xmax),
                                     ymin,
                                     "{0}{1}".format(x, x_suffix)))
 
     for y in ys:
         if isbetween(y, bbox[0][1], bbox[1][1]):
-            ticks["yticks"].append((froot(lambda xt: tickproj(*axproj(xt, ymin, inverse=True))[1]-y, xmin, xmax),
+            ticks["yticks"].append((froot(lambda xt:
+                                          map_crs.transform(graticule_crs, xt, ymin)[1]-y,
+                                          xmin, xmax),
                                     ymin,
                                     "{0}{1}".format(y, y_suffix)))
 
     # top spine
     for x in xs:
         if isbetween(x, bbox[2][0], bbox[3][0]):
-            ticks["xticks"].append((froot(lambda xt: tickproj(*axproj(xt, ymax, inverse=True))[0]-x, xmin, xmax),
+            ticks["xticks"].append((froot(lambda xt:
+                                          map_crs.transform(graticule_crs, xt, ymax)[0]-y,
+                                          xmin, xmax),
                                     ymax,
                                     "{0}{1}".format(x, x_suffix)))
 
     for y in ys:
         if isbetween(y, bbox[2][1], bbox[3][1]):
-            ticks["yticks"].append((froot(lambda xt: tickproj(*axproj(xt, ymax, inverse=True))[1]-y, xmin, xmax),
+            ticks["yticks"].append((froot(lambda xt:
+                                          map_crs.transform(graticule_crs, xt, ymax)[1]-y,
+                                          xmin, xmax),
                                     ymax,
                                     "{0}{1}".format(y, y_suffix)))
 
@@ -139,14 +143,18 @@ def label_ticks(ax, xs: Iterable, ys: Iterable,
     for x in xs:
         if isbetween(x, bbox[0][0], bbox[3][0]):
             ticks["xticks"].append((xmin,
-                                    froot(lambda yt: tickproj(*axproj(xmin, yt, inverse=True))[0]-x, ymin, ymax),
+                                    froot(lambda yt:
+                                          map_crs.transform(graticule_crs, xmin, yt)[0]-x,
+                                          ymin, ymax),
                                     "{0}{1}".format(x, x_suffix)))
 
 
     for y in ys:
         if isbetween(y, bbox[0][1], bbox[3][1]):
             ticks["yticks"].append((xmin,
-                                    froot(lambda yt: tickproj(*axproj(xmin, yt, inverse=True))[1]-y, ymin, ymax),
+                                    froot(lambda yt:
+                                          map_crs.transform(graticule_crs, xmin, yt)[1]-y,
+                                          ymin, ymax),
                                     "{0}{1}".format(y, y_suffix)))
 
 
@@ -154,13 +162,17 @@ def label_ticks(ax, xs: Iterable, ys: Iterable,
     for x in xs:
         if isbetween(x, bbox[1][0], bbox[2][0]):
             ticks["xticks"].append((xmax,
-                                    froot(lambda yt: tickproj(*axproj(xmax, yt, inverse=True))[0]-x, ymin, ymax),
+                                    froot(lambda yt:
+                                          map_crs.transform(graticule_crs, xmax, yt)[0]-x,
+                                          ymin, ymax),
                                     "{0}{1}".format(x, x_suffix)))
 
     for y in ys:
         if isbetween(y, bbox[1][1], bbox[2][1]):
             ticks["yticks"].append((xmax,
-                                    froot(lambda yt: tickproj(*axproj(xmax, yt, inverse=True))[1]-y, ymin, ymax),
+                                    froot(lambda yt:
+                                          map_crs.transform(graticule_crs, xmax, yt)[1]-y,
+                                          ymin, ymax),
                                     "{0}{1}".format(y, y_suffix)))
 
     # Update map

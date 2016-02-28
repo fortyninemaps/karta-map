@@ -1,5 +1,7 @@
-""" Karta-map is a module that depends on the karta package and adds some
-useful functions for drawing maps with matplotlib. """
+"""
+karta.mapping is an extension module for the karta package that provides a
+(thin) wrapper around matplotlib for easily plotting geogrphaical data.
+"""
 
 import scipy.optimize
 import numpy as np
@@ -175,98 +177,70 @@ def label_ticks(ax, xs: Iterable, ys: Iterable,
     ax.set_yticks([])
     return
 
-def plot(geoms: Iterable, *args, crs=None, **kwargs):
+def plot(geoms: Iterable, *args, **kwargs):
     """ Metafunction that dispatches to the correct plotting routine. """
 
     if isinstance(geoms, list):
         if geoms[0]._geotype == "Point":
-            ret = plot_points(geoms, *args, crs=crs, **kwargs)
+            ret = plot_points(geoms, *args, **kwargs)
         elif geoms[0]._geotype == "Multipoint":
-            ret = plot_multipoints(geoms, *args, crs=crs, **kwargs)
+            ret = plot_multipoints(geoms, *args, **kwargs)
         elif geoms[0]._geotype == "Line":
-            ret = plot_lines(geoms, *args, crs=crs, **kwargs)
+            ret = plot_lines(geoms, *args, **kwargs)
         elif geoms[0]._geotype == "Polygon":
-            ret = plot_polygons(geoms, crs=crs, **kwargs)
+            ret = plot_polygons(geoms, **kwargs)
         else:
             raise TypeError("Invalid geotype")
     else:
         if geoms._geotype == "Point":
-            ret = plot_point(geoms, *args, crs=crs, **kwargs)
+            ret = plot_point(geoms, *args, **kwargs)
         elif geoms._geotype == "Multipoint":
-            ret = plot_multipoint(geoms, *args, crs=crs, **kwargs)
+            ret = plot_multipoint(geoms, *args, **kwargs)
         elif geoms._geotype == "Line":
-            ret = plot_line(geoms, *args, crs=crs, **kwargs)
+            ret = plot_line(geoms, *args, **kwargs)
         elif geoms._geotype == "Polygon":
-            ret = plot_polygon(geoms, crs=crs, **kwargs)
+            ret = plot_polygon(geoms, **kwargs)
         else:
             raise TypeError("Invalid geotype")
 
     return ret
 
-def scale_to_geometry(geom, ax, crs):
-    x0, x1, y0, y1 = geom.get_extent(crs=crs)
-    if ax._autoscaleXon:
-        ax.set_xlim(x0, x1)
-    if ax._autoscaleYon:
-        ax.set_ylim(y0, y1)
-    return
-
-def plot_point(geom, *args, crs=None, **kwargs):
+def plot_point(geom, *args, ax=None, crs=None, **kwargs):
     """ Plot a Line geometry, projected to the coordinate system `crs` """
-    if (len(args) != 0) and hasattr(args[0], "plot"):
-        ax = args[0]
-        args = args[1:]
-    else:
+    if ax is None:
         ax = gca()
     x, y = geom.get_vertex(crs=crs)
     return ax.plot(x, y, *args, **kwargs)
 
-def plot_points(geoms, *args, crs=None, **kwargs):
+def plot_points(geoms, *args, ax=None, crs=None, **kwargs):
     """ Plot Line geometries, projected to the coordinate system `crs` """
-    if (len(args) != 0) and hasattr(args[0], "plot"):
-        ax = args[0]
-        args = args[1:]
-    else:
+    if ax is None:
         ax = gca()
     return [plot_point(geom, ax, *args, crs=crs, **kwargs) for geom in geoms]
 
-def plot_line(geom, *args, crs=None, **kwargs):
+def plot_line(geom, *args, ax=None, crs=None, **kwargs):
     """ Plot a Line geometry, projected to the coordinate system `crs` """
-    if (len(args) != 0) and hasattr(args[0], "plot"):
-        ax = args[0]
-        args = args[1:]
-    else:
+    if ax is None:
         ax = gca()
     x, y = geom.get_coordinate_lists(crs=crs)
     return ax.plot(x, y, *args, **kwargs)
 
-def plot_lines(geoms, *args, crs=None, **kwargs):
+def plot_lines(geoms, *args, ax=None, crs=None, **kwargs):
     """ Plot Line geometries, projected to the coordinate system `crs` """
-    if (len(args) != 0) and hasattr(args[0], "plot"):
-        ax = args[0]
-        args = args[1:]
-    else:
+    if ax is None:
         ax = gca()
     return [plot_line(geom, ax, *args, crs=crs, **kwargs) for geom in geoms]
 
-def plot_polygon(geom, *args, crs=None, **kwargs):
+def plot_polygon(geom, *args, ax=None, crs=None, **kwargs):
     """ Plot a Polygon geometry, projected to the coordinate system `crs` """
-    if (len(args) != 0) and hasattr(args[0], "plot"):
-        ax = args[0]
-        args = args[1:]
-    else:
+    if ax is None:
         ax = gca()
-    p = patches.Polygon(geom.get_vertices(crs=crs), **kwargs)
-    ax.add_patch(p)
-    scale_to_geometry(geom, ax, crs=crs)
-    return p
+    x, y = geom.get_coordinate_lists(crs=crs)
+    return ax.fill(x, y, *args, **kwargs)
 
-def plot_polygons(geoms: Iterable, *args, crs=None, **kwargs):
+def plot_polygons(geoms: Iterable, *args, ax=None, crs=None, **kwargs):
     """ Plot Polygon geometries, projected to the coordinate system `crs` """
-    if (len(args) != 0) and hasattr(args[0], "plot"):
-        ax = args[0]
-        args = args[1:]
-    else:
+    if ax is None:
         ax = gca()
     return [plot_polygon(geom, ax, crs=crs, **kwargs) for geom in geoms]
 

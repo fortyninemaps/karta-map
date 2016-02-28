@@ -11,9 +11,10 @@ from matplotlib import patches
 from matplotlib.pyplot import gca, Axes
 
 from .vector import Point, Multipoint, Line, Polygon
-from . import crs
+from .raster import RegularGrid
+from .crs import CRS, Cartesian, SphericalEarth
 
-def get_axes_extent(ax, ax_crs: crs.CRS, crs=crs.SphericalEarth):
+def get_axes_extent(ax, ax_crs: CRS, crs=SphericalEarth):
     """ Get the extent of an Axes in geographical (or other) coordinates. """
     xl, xr = ax.get_xlim()
     yb, yt = ax.get_ylim()
@@ -39,8 +40,8 @@ def geodesic(pt0: Point, pt1: Point, n=20):
     return Line(points)
 
 def add_graticule(ax, xs: Iterable, ys: Iterable,
-                  map_crs=crs.Cartesian,
-                  graticule_crs=crs.SphericalEarth,
+                  map_crs=Cartesian,
+                  graticule_crs=SphericalEarth,
                   lineargs=None):
     """ Add a map graticule, with intervals in `graticule_crs` projected onto a
     map projected with `map_crs` """
@@ -86,8 +87,8 @@ def froot(f, a, b):
     return scipy.optimize.brentq(f, a, b)
 
 def label_ticks(ax, xs: Iterable, ys: Iterable,
-                map_crs=crs.Cartesian,
-                graticule_crs=crs.SphericalEarth,
+                map_crs=Cartesian,
+                graticule_crs=SphericalEarth,
                 textargs=None, tickargs=None,
                 x_suffix="\u00b0E", y_suffix="\u00b0N"):
 
@@ -218,17 +219,32 @@ def plot(geoms: Iterable, *args, **kwargs):
     return ret
 
 def plot_point(geom, *args, ax=None, crs=None, **kwargs):
-    """ Plot a Line geometry, projected to the coordinate system `crs` """
+    """ Plot a Point geometry, projected to the coordinate system `crs` """
     if ax is None:
         ax = gca()
     x, y = geom.get_vertex(crs=crs)
     return ax.plot(x, y, *args, **kwargs)
 
 def plot_points(geoms, *args, ax=None, crs=None, **kwargs):
-    """ Plot Line geometries, projected to the coordinate system `crs` """
+    """ Plot point geometries, projected to the coordinate system `crs` """
     if ax is None:
         ax = gca()
     return [plot_point(geom, ax, *args, crs=crs, **kwargs) for geom in geoms]
+
+def plot_multipoint(geom, *args, ax=None, crs=None, **kwargs):
+    """ Plot a Line geometry, projected to the coordinate system `crs` """
+    if ax is None:
+        ax = gca()
+    kwargs.setdefault("linestyle", "none")
+    kwargs.setdefault("marker", ".")
+    x, y = geom.get_coordinate_lists(crs=crs)
+    return ax.plot(x, y, *args, **kwargs)
+
+def plot_multipoints(geoms, *args, ax=None, crs=None, **kwargs):
+    """ Plot Line geometries, projected to the coordinate system `crs` """
+    if ax is None:
+        ax = gca()
+    return [plot_multipoint(geom, ax, *args, crs=crs, **kwargs) for geom in geoms]
 
 def plot_line(geom, *args, ax=None, crs=None, **kwargs):
     """ Plot a Line geometry, projected to the coordinate system `crs` """
@@ -255,4 +271,11 @@ def plot_polygons(geoms: Iterable, *args, ax=None, crs=None, **kwargs):
     if ax is None:
         ax = gca()
     return [plot_polygon(geom, ax, crs=crs, **kwargs) for geom in geoms]
+
+def plot_grid(grid: RegularGrid, ax=None, crs=None, **kwargs):
+    if ax is None:
+        ax = gca()
+    kwargs.setdefault("origin", "bottom")
+    kwargs.setdefault("extent", grid.get_extent(crs=crs))
+    return ax.imshow(grid.values, **kwargs)
 

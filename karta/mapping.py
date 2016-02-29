@@ -14,6 +14,13 @@ from .vector import Point, Multipoint, Line, Polygon
 from .raster import RegularGrid
 from .crs import CRS, Cartesian, SphericalEarth
 
+def set_current_axes(wrappedfunc):
+    """ Decorator to set current Axes as default ax in plotting functions """
+    def replacementfunc(*args, **kwargs):
+        kwargs.setdefault("ax", gca())
+        return wrappedfunc(*args, **kwargs)
+    return replacementfunc
+
 def get_axes_extent(ax, ax_crs: CRS, crs=SphericalEarth):
     """ Get the extent of an Axes in geographical (or other) coordinates. """
     xl, xr = ax.get_xlim()
@@ -218,63 +225,56 @@ def plot(geoms: Iterable, *args, **kwargs):
 
     return ret
 
+@set_current_axes
 def plot_point(geom, *args, ax=None, crs=None, **kwargs):
     """ Plot a Point geometry, projected to the coordinate system `crs` """
-    if ax is None:
-        ax = gca()
+    kwargs.setdefault("marker", ".")
     x, y = geom.get_vertex(crs=crs)
     return ax.plot(x, y, *args, **kwargs)
 
+@set_current_axes
 def plot_points(geoms, *args, ax=None, crs=None, **kwargs):
     """ Plot point geometries, projected to the coordinate system `crs` """
-    if ax is None:
-        ax = gca()
     return [plot_point(geom, ax, *args, crs=crs, **kwargs) for geom in geoms]
 
+@set_current_axes
 def plot_multipoint(geom, *args, ax=None, crs=None, **kwargs):
     """ Plot a Line geometry, projected to the coordinate system `crs` """
-    if ax is None:
-        ax = gca()
     kwargs.setdefault("linestyle", "none")
     kwargs.setdefault("marker", ".")
     x, y = geom.get_coordinate_lists(crs=crs)
     return ax.plot(x, y, *args, **kwargs)
 
+@set_current_axes
 def plot_multipoints(geoms, *args, ax=None, crs=None, **kwargs):
     """ Plot Line geometries, projected to the coordinate system `crs` """
-    if ax is None:
-        ax = gca()
     return [plot_multipoint(geom, ax, *args, crs=crs, **kwargs) for geom in geoms]
 
+@set_current_axes
 def plot_line(geom, *args, ax=None, crs=None, **kwargs):
     """ Plot a Line geometry, projected to the coordinate system `crs` """
-    if ax is None:
-        ax = gca()
     x, y = geom.get_coordinate_lists(crs=crs)
     return ax.plot(x, y, *args, **kwargs)
 
+@set_current_axes
 def plot_lines(geoms, *args, ax=None, crs=None, **kwargs):
     """ Plot Line geometries, projected to the coordinate system `crs` """
-    if ax is None:
-        ax = gca()
     return [plot_line(geom, ax, *args, crs=crs, **kwargs) for geom in geoms]
 
+@set_current_axes
 def plot_polygon(geom, *args, ax=None, crs=None, **kwargs):
     """ Plot a Polygon geometry, projected to the coordinate system `crs` """
-    if ax is None:
-        ax = gca()
+    kwargs.setdefault("facecolor", "none")
     x, y = geom.get_coordinate_lists(crs=crs)
     return ax.fill(x, y, *args, **kwargs)
 
+@set_current_axes
 def plot_polygons(geoms: Iterable, *args, ax=None, crs=None, **kwargs):
     """ Plot Polygon geometries, projected to the coordinate system `crs` """
-    if ax is None:
-        ax = gca()
     return [plot_polygon(geom, ax, crs=crs, **kwargs) for geom in geoms]
 
+@set_current_axes
 def plot_grid(grid: RegularGrid, ax=None, crs=None, **kwargs):
-    if ax is None:
-        ax = gca()
     kwargs.setdefault("origin", "bottom")
     kwargs.setdefault("extent", grid.get_extent(crs=crs))
     return ax.imshow(grid.values, **kwargs)

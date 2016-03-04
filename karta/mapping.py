@@ -10,15 +10,25 @@ from typing import Iterable
 from matplotlib import patches
 from matplotlib.pyplot import gca, Axes
 
-from .vector import Point, Multipoint, Line, Polygon
+from .vector import Point, Multipoint, Line, Polygon, Geometry
 from .raster import RegularGrid
 from .crs import CRS, Cartesian, SphericalEarth
 
-def set_current_axes(wrappedfunc):
+def default_current_axes(wrappedfunc):
     """ Decorator to set current Axes as default ax in plotting functions """
     def replacementfunc(*args, **kwargs):
         kwargs.setdefault("ax", gca())
         return wrappedfunc(*args, **kwargs)
+    return replacementfunc
+
+def recurse_iterables(wrappedfunc):
+    """ Decorator to generate functions that apply themselve recursively to
+    iterable non-Geometry inputs. """
+    def replacementfunc(main_arg, *args, **kwargs):
+        if not isinstance(main_arg, Geometry) and hasattr(main_arg, "__iter__"):
+            return [replacementfunc(a, *args, **kwargs) for a in main_arg]
+        else:
+            return wrappedfunc(main_arg, *args, **kwargs)
     return replacementfunc
 
 def get_axes_extent(ax, ax_crs: CRS, crs=SphericalEarth):
@@ -197,47 +207,36 @@ def label_ticks(ax, xs: Iterable, ys: Iterable,
     ax.set_yticks([])
     return
 
-def plot(geoms: Iterable, *args, **kwargs):
+def _get_plotting_func(geom):
+    if isinstance(geom, list):
+        return _get_plotting_func(geom[0])
+    if not hasattr(geom, "_geotype"):
+        raise TypeError("Invalid input type: {0}".format(type(geom)))
+    if geom._geotype == "Point":
+        return plot_point
+    if geom._geotype == "Multipoint":
+        return plot_multipoint
+    if geom._geotype == "Line":
+        return plot_line
+    if geom._geotype == "Polygon":
+        return plot_polygon
+    raise TypeError("Invalid geotype: {0}".format(geom._geotype))
+
+def plot(geom, *args, **kwargs):
     """ Metafunction that dispatches to the correct plotting routine. """
+    func = _get_plotting_func(geom)
+    return func(geom, *args, **kwargs)
 
-    if isinstance(geoms, list):
-        if geoms[0]._geotype == "Point":
-            ret = plot_points(geoms, *args, **kwargs)
-        elif geoms[0]._geotype == "Multipoint":
-            ret = plot_multipoints(geoms, *args, **kwargs)
-        elif geoms[0]._geotype == "Line":
-            ret = plot_lines(geoms, *args, **kwargs)
-        elif geoms[0]._geotype == "Polygon":
-            ret = plot_polygons(geoms, **kwargs)
-        else:
-            raise TypeError("Invalid geotype")
-    else:
-        if geoms._geotype == "Point":
-            ret = plot_point(geoms, *args, **kwargs)
-        elif geoms._geotype == "Multipoint":
-            ret = plot_multipoint(geoms, *args, **kwargs)
-        elif geoms._geotype == "Line":
-            ret = plot_line(geoms, *args, **kwargs)
-        elif geoms._geotype == "Polygon":
-            ret = plot_polygon(geoms, **kwargs)
-        else:
-            raise TypeError("Invalid geotype")
-
-    return ret
-
-@set_current_axes
+@default_current_axes
+@recurse_iterables
 def plot_point(geom, *args, ax=None, crs=None, **kwargs):
     """ Plot a Point geometry, projected to the coordinate system `crs` """
     kwargs.setdefault("marker", ".")
     x, y = geom.get_vertex(crs=crs)
     return ax.plot(x, y, *args, **kwargs)
 
-@set_current_axes
-def plot_points(geoms, *args, ax=None, crs=None, **kwargs):
-    """ Plot point geometries, projected to the coordinate system `crs` """
-    return [plot_point(geom, ax, *args, crs=crs, **kwargs) for geom in geoms]
-
-@set_current_axes
+@default_current_axes
+@recurse_iterables
 def plot_multipoint(geom, *args, ax=None, crs=None, **kwargs):
     """ Plot a Line geometry, projected to the coordinate system `crs` """
     kwargs.setdefault("linestyle", "none")
@@ -245,35 +244,22 @@ def plot_multipoint(geom, *args, ax=None, crs=None, **kwargs):
     x, y = geom.get_coordinate_lists(crs=crs)
     return ax.plot(x, y, *args, **kwargs)
 
-@set_current_axes
-def plot_multipoints(geoms, *args, ax=None, crs=None, **kwargs):
-    """ Plot Line geometries, projected to the coordinate system `crs` """
-    return [plot_multipoint(geom, ax, *args, crs=crs, **kwargs) for geom in geoms]
-
-@set_current_axes
+@default_current_axes
+@recurse_iterables
 def plot_line(geom, *args, ax=None, crs=None, **kwargs):
     """ Plot a Line geometry, projected to the coordinate system `crs` """
     x, y = geom.get_coordinate_lists(crs=crs)
     return ax.plot(x, y, *args, **kwargs)
 
-@set_current_axes
-def plot_lines(geoms, *args, ax=None, crs=None, **kwargs):
-    """ Plot Line geometries, projected to the coordinate system `crs` """
-    return [plot_line(geom, ax, *args, crs=crs, **kwargs) for geom in geoms]
-
-@set_current_axes
+@default_current_axes
+@recurse_iterables
 def plot_polygon(geom, *args, ax=None, crs=None, **kwargs):
     """ Plot a Polygon geometry, projected to the coordinate system `crs` """
     kwargs.setdefault("facecolor", "none")
     x, y = geom.get_coordinate_lists(crs=crs)
     return ax.fill(x, y, *args, **kwargs)
 
-@set_current_axes
-def plot_polygons(geoms: Iterable, *args, ax=None, crs=None, **kwargs):
-    """ Plot Polygon geometries, projected to the coordinate system `crs` """
-    return [plot_polygon(geom, ax, crs=crs, **kwargs) for geom in geoms]
-
-@set_current_axes
+@default_current_axes
 def plot_grid(grid: RegularGrid, ax=None, crs=None, **kwargs):
     kwargs.setdefault("origin", "bottom")
     kwargs.setdefault("extent", grid.get_extent(crs=crs))

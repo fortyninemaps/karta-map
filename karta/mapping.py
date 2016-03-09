@@ -35,7 +35,7 @@ def get_axes_extent(ax, ax_crs: CRS, crs=SphericalEarth):
     """ Get the extent of an Axes in geographical (or other) coordinates. """
     xl, xr = ax.get_xlim()
     yb, yt = ax.get_ylim()
-    
+
     ll = ax_crs.transform(crs, xl, yb)
     lr = ax_crs.transform(crs, xr, yb)
     ur = ax_crs.transform(crs, xr, yt)
@@ -86,11 +86,11 @@ def add_graticule_contour(ax, xs, ys, map_crs, graticule_crs, nx=100, ny=100):
     Xg, Yg = map_crs.transform(graticule_crs, Ym, Ym)
     ax.contour(Xm, Ym, abs(Xg), levels=xs, colors="k", linestyles="-")
     ax.contour(Xm, Ym, Yg, levels=ys, colors="k", linestyles="-")
-    
+
     Xg_pm = Xg
     Xg_pm[(abs(Xg)>10) & (abs(Xg)<170)] = np.nan
     ax.contour(Xm, Ym, Xg_pm, levels=[0.0], colors="k", linestyles="-")
-    
+
     return
 
 def find_intersection(xa, ya, xb, yb, crsa, crsb):
@@ -127,7 +127,7 @@ def label_ticks(ax, xs: Iterable, ys: Iterable,
     for x in xs:
         if isbetween(x, bbox[0][0], bbox[1][0]):
             ticks["xticks"].append((froot(lambda xt:
-                                          map_crs.transform(graticule_crs, xt, ymin)[0]-x, 
+                                          map_crs.transform(graticule_crs, xt, ymin)[0]-x,
                                           xmin, xmax),
                                     ymin,
                                     "{0}{1}".format(x, x_suffix)))
@@ -256,6 +256,7 @@ def plot_line(geom, *args, ax=None, crs=None, **kwargs):
 def plot_polygon(geom, *args, ax=None, crs=None, **kwargs):
     """ Plot a Polygon geometry, projected to the coordinate system `crs` """
     kwargs.setdefault("facecolor", "none")
+    kwargs.setdefault("edgecolor", "black")
     x, y = geom.get_coordinate_lists(crs=crs)
     return ax.fill(x, y, *args, **kwargs)
 
@@ -264,4 +265,38 @@ def plot_grid(grid: RegularGrid, ax=None, crs=None, **kwargs):
     kwargs.setdefault("origin", "bottom")
     kwargs.setdefault("extent", grid.get_extent(crs=crs))
     return ax.imshow(grid.values, **kwargs)
+
+def _position_over(artist):
+    xy = artist.get_xy()
+    x = xy[:,0]
+    y = xy[:,1]
+    return 0.5*(np.min(x) + np.max(x)), 0.5*(np.min(y) + np.max(y))
+
+def _position_below(artist):
+    xy = artist.get_xy()
+    x = xy[:,0]
+    y = xy[:,1]
+    return 0.5*(np.min(x) + np.max(x)), np.min(y)
+
+def _position_above(artist):
+    xy = artist.get_xy()
+    x = xy[:,0]
+    y = xy[:,1]
+    return 0.5*(np.min(x) + np.max(x)), np.max(y)
+
+@default_current_axes
+def annotate(artist, label, where="over", ax=None, **kwargs):
+    """ Add a Text object near *artist*. """
+    if where == "over":
+        x, y = _position_over(artist)
+        kwargs.setdefault("va", "center")
+    elif where == "below":
+        x, y = _position_below(artist)
+        kwargs.setdefault("va", "top")
+    elif where == "above":
+        x, y = _position_above(artist)
+        kwargs.setdefault("va", "bottom")
+    else:
+        raise ValueError("invalid value for 'where'")
+    return ax.text(x, y, label, **kwargs)
 

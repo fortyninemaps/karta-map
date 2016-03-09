@@ -1,19 +1,20 @@
 # karta.mapping
 
-This package extends the *Karta* library by adding a `mapping` submodule that
-contains convenience plotting functions wrapping matplotlib.
+This extension module adds *matplotlib* plotting functions to the *Karta*
+geospatial library.
 
 ## Basic usage
 
 ```python
-from karta.mapping import plot
+from karta.mapping import plot, annotate
 from karta.crs import WebMercator
 
-points = ... # list of karta.Point objects
+points = ...    # list of karta.Point objects
 plot(points, marker=".", color="black", crs=WebMercator)
 
-polygon = ... #karta.Polygon
-plot(polygon, linewidth=0.5, facecolor="cyan", edgecolor="red", crs=WebMercator)
+polygon = ...   # karta.Polygon
+artist = plot(polygon, linewidth=0.5, facecolor="cyan", edgecolor="red", crs=WebMercator)
+annotate(artist[0], "Study region", where="over")
 ```
 
 ## Dependencies

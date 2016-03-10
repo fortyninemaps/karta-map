@@ -17,7 +17,9 @@ from .crs import CRS, Cartesian, SphericalEarth
 def default_current_axes(wrappedfunc):
     """ Decorator to set current Axes as default ax in plotting functions """
     def replacementfunc(*args, **kwargs):
-        kwargs.setdefault("ax", gca())
+        if "ax" not in kwargs:
+            # don't use dict.setdefault because don't want gca() to be evaluated
+            kwargs["ax"] = gca()
         return wrappedfunc(*args, **kwargs)
     return replacementfunc
 

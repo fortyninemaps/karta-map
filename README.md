@@ -19,6 +19,9 @@ annotate(artist[0], "Study region", where="over")
 
 ## Dependencies
 
+`karta.mapping` is written in type-annotated Python, and therefore requires
+Python 3.
+
 - [karta](http://www.ironicmtn.com/karta.html) ([Github](https://github.com/njwilson23/karta))
 - [matplotlib](http://www.matplotlib.org) ([Github](https://github.com/matplotlib/matplotlib))
 - [scipy](http://www.scipy.org/scipylib/index.html) ([Github](https://github.com/scipy/scipy))

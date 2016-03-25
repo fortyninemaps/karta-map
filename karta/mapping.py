@@ -6,15 +6,14 @@ karta.mapping is an extension module for the karta package that provides a
 import scipy.optimize
 import numpy as np
 
-from typing import Iterable
-from matplotlib import patches
-from matplotlib.pyplot import gca, Axes
+from typing import Union, Iterable, Tuple, Callable
+from matplotlib.pyplot import gca, Axes, Artist
 
 from .vector import Point, Multipoint, Line, Polygon, Geometry
 from .raster import RegularGrid
 from .crs import CRS, Cartesian, SphericalEarth
 
-def default_current_axes(wrappedfunc):
+def default_current_axes(wrappedfunc: Callable):
     """ Decorator to set current Axes as default ax in plotting functions """
     def replacementfunc(*args, **kwargs):
         if "ax" not in kwargs:
@@ -23,7 +22,7 @@ def default_current_axes(wrappedfunc):
         return wrappedfunc(*args, **kwargs)
     return replacementfunc
 
-def recurse_iterables(wrappedfunc):
+def recurse_iterables(wrappedfunc: Callable):
     """ Decorator to generate functions that apply themselve recursively to
     iterable non-Geometry inputs. """
     def replacementfunc(main_arg, *args, **kwargs):
@@ -33,7 +32,7 @@ def recurse_iterables(wrappedfunc):
             return wrappedfunc(main_arg, *args, **kwargs)
     return replacementfunc
 
-def get_axes_extent(ax, ax_crs: CRS, crs=SphericalEarth):
+def get_axes_extent(ax: Axes, ax_crs: CRS, crs: CRS=SphericalEarth):
     """ Get the extent of an Axes in geographical (or other) coordinates. """
     xl, xr = ax.get_xlim()
     yb, yt = ax.get_ylim()
@@ -58,10 +57,9 @@ def geodesic(pt0: Point, pt1: Point, n=20):
         i += 1
     return Line(points)
 
-def add_graticule(ax, xs: Iterable, ys: Iterable,
-                  map_crs=Cartesian,
-                  graticule_crs=SphericalEarth,
-                  lineargs=None):
+def add_graticule(ax: Axes, xs: Iterable[float], ys: Iterable[float],
+        map_crs: CRS=Cartesian, graticule_crs: CRS=SphericalEarth,
+        lineargs=None):
     """ Add a map graticule, with intervals in `graticule_crs` projected onto a
     map projected with `map_crs` """
     if lineargs is None:
@@ -79,7 +77,8 @@ def add_graticule(ax, xs: Iterable, ys: Iterable,
         plot(_line, ax, **lineargs)
     return
 
-def add_graticule_contour(ax, xs, ys, map_crs, graticule_crs, nx=100, ny=100):
+def add_graticule_contour(ax: Axes, xs: Iterable[float], ys: Iterable[float],
+        map_crs: CRS, graticule_crs: CRS, nx: int=100, ny: int=100):
     xmin, xmax = ax.get_xlim()
     ymin, ymax = ax.get_ylim()
     xmap = np.linspace(xmin, xmax, nx)
@@ -95,21 +94,16 @@ def add_graticule_contour(ax, xs, ys, map_crs, graticule_crs, nx=100, ny=100):
 
     return
 
-def find_intersection(xa, ya, xb, yb, crsa, crsb):
-    """ Return the point in *crs_a* on the line xa, ya that intersects xb, yb on *crs_b*. """
-
-
 def isbetween(x: float, a: float, b: float) -> bool:
     return (a < x < b) or (b < x < a)
 
-def froot(f, a, b):
+def froot(f: float, a: float, b: float) -> float:
     return scipy.optimize.brentq(f, a, b)
 
-def label_ticks(ax, xs: Iterable, ys: Iterable,
-                map_crs=Cartesian,
-                graticule_crs=SphericalEarth,
-                textargs=None, tickargs=None,
-                x_suffix="\u00b0E", y_suffix="\u00b0N"):
+def label_ticks(ax: Axes, xs: Iterable[float], ys: Iterable[float],
+        map_crs: CRS=Cartesian, graticule_crs: CRS=SphericalEarth,
+        textargs=None, tickargs=None,
+        x_suffix: str="\u00b0E", y_suffix: str="\u00b0N"):
 
     if textargs is None:
         textargs = dict()
@@ -209,7 +203,7 @@ def label_ticks(ax, xs: Iterable, ys: Iterable,
     ax.set_yticks([])
     return
 
-def _get_plotting_func(geom):
+def _get_plotting_func(geom: Union[Geometry, Iterable[Geometry]]) -> Callable:
     if isinstance(geom, list):
         return _get_plotting_func(geom[0])
     if not hasattr(geom, "_geotype"):
@@ -224,14 +218,15 @@ def _get_plotting_func(geom):
         return plot_polygon
     raise TypeError("Invalid geotype: {0}".format(geom._geotype))
 
-def plot(geom, *args, **kwargs):
+def plot(geom: Union[Geometry, Iterable[Geometry]], *args, **kwargs):
     """ Metafunction that dispatches to the correct plotting routine. """
     func = _get_plotting_func(geom)
     return func(geom, *args, **kwargs)
 
 @default_current_axes
 @recurse_iterables
-def plot_point(geom, *args, ax=None, crs=None, **kwargs):
+def plot_point(geom: Union[Point, Iterable[Point]], *args,
+        ax: Axes=None, crs: CRS=None, **kwargs):
     """ Plot a Point geometry, projected to the coordinate system `crs` """
     kwargs.setdefault("marker", ".")
     x, y = geom.get_vertex(crs=crs)
@@ -239,7 +234,8 @@ def plot_point(geom, *args, ax=None, crs=None, **kwargs):
 
 @default_current_axes
 @recurse_iterables
-def plot_multipoint(geom, *args, ax=None, crs=None, **kwargs):
+def plot_multipoint(geom: Union[Multipoint, Iterable[Multipoint]], *args,
+        ax: Axes=None, crs: CRS=None, **kwargs):
     """ Plot a Line geometry, projected to the coordinate system `crs` """
     kwargs.setdefault("linestyle", "none")
     kwargs.setdefault("marker", ".")
@@ -248,14 +244,16 @@ def plot_multipoint(geom, *args, ax=None, crs=None, **kwargs):
 
 @default_current_axes
 @recurse_iterables
-def plot_line(geom, *args, ax=None, crs=None, **kwargs):
+def plot_line(geom: Union[Line, Iterable[Line]], *args,
+        ax: Axes=None, crs: CRS=None, **kwargs):
     """ Plot a Line geometry, projected to the coordinate system `crs` """
     x, y = geom.get_coordinate_lists(crs=crs)
     return ax.plot(x, y, *args, **kwargs)
 
 @default_current_axes
 @recurse_iterables
-def plot_polygon(geom, *args, ax=None, crs=None, **kwargs):
+def plot_polygon(geom: Union[Polygon, Iterable[Polygon]], *args,
+        ax: Axes=None, crs: CRS=None, **kwargs):
     """ Plot a Polygon geometry, projected to the coordinate system `crs` """
     kwargs.setdefault("facecolor", "none")
     kwargs.setdefault("edgecolor", "black")
@@ -263,31 +261,36 @@ def plot_polygon(geom, *args, ax=None, crs=None, **kwargs):
     return ax.fill(x, y, *args, **kwargs)
 
 @default_current_axes
-def plot_grid(grid: RegularGrid, ax=None, crs=None, **kwargs):
+def plot_grid(grid: RegularGrid, ax: Axes=None, crs: CRS=None, **kwargs):
     kwargs.setdefault("origin", "bottom")
     kwargs.setdefault("extent", grid.get_extent(crs=crs))
-    return ax.imshow(grid.values, **kwargs)
 
-def _position_over(artist):
+    # compute the pixels that can actually be displayed
+    _, _, width, height = ax.bbox.bounds
+    ny, nx = grid.size
+    r = (max(int(ny//height), 1), max(int(nx//width), 1))
+    return ax.imshow(grid[::r[0],::r[1]], **kwargs)
+
+def _position_over(artist: Artist) -> Tuple[float, float]:
     xy = artist.get_xy()
     x = xy[:,0]
     y = xy[:,1]
     return 0.5*(np.min(x) + np.max(x)), 0.5*(np.min(y) + np.max(y))
 
-def _position_below(artist):
+def _position_below(artist: Artist) -> Tuple[float, float]:
     xy = artist.get_xy()
     x = xy[:,0]
     y = xy[:,1]
     return 0.5*(np.min(x) + np.max(x)), np.min(y)
 
-def _position_above(artist):
+def _position_above(artist: Artist) -> Tuple[float, float]:
     xy = artist.get_xy()
     x = xy[:,0]
     y = xy[:,1]
     return 0.5*(np.min(x) + np.max(x)), np.max(y)
 
 @default_current_axes
-def annotate(artist, label, where="over", ax=None, **kwargs):
+def annotate(artist: Artist, label: str, where: str="over", ax: Axes=None, **kwargs):
     """ Add a Text object near *artist*. """
     if where == "over":
         x, y = _position_over(artist)

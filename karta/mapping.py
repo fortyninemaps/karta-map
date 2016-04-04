@@ -57,11 +57,26 @@ def geodesic(pt0: Point, pt1: Point, n=20):
         i += 1
     return Line(points)
 
-def add_graticule(ax: Axes, xs: Iterable[float], ys: Iterable[float],
-        map_crs: CRS=Cartesian, graticule_crs: CRS=SphericalEarth,
+@default_current_axes
+def add_graticule(xs: Iterable[float], ys: Iterable[float],
+        ax: Axes=None, map_crs: CRS=Cartesian, graticule_crs: CRS=SphericalEarth,
         lineargs=None):
-    """ Add a map graticule, with intervals in `graticule_crs` projected onto a
-    map projected with `map_crs` """
+    """ Adds a map graticule.
+
+    Parameters
+    ----------
+    xs : Iterable[float],
+    ys : Iterable[float]
+        Easting and northing componenets of graticule, in `graticule_crs`
+    ax : Axes, optional
+        Axes to draw to (default current Axes)
+    map_crs : karta.crs.CRS, optional
+        CRS defining the display projection (default Cartesian)
+    graticule_crs : karta.crs.CRS, optional
+        CRS defining the graticule projection (default SphericalEarth)
+    lineargs : dict, optional
+        Arguments passed to karta.mapping.plot while drawing graticule lines
+    """
     if lineargs is None:
         lineargs = dict(color="k", linewidth=0.5)
 
@@ -69,30 +84,14 @@ def add_graticule(ax: Axes, xs: Iterable[float], ys: Iterable[float],
     x, y = bbox.get_coordinate_lists(crs=graticule_crs)
     xmin, xmax = min(x), max(x)
     ymin, ymax = min(y), max(y)
+    artists = []
     for i in range(len(xs)):
-        _line = Line([(xs[i], ymin), (xs[i], ymax)], crs=map_crs)
-        plot(_line, ax, **lineargs)
+        _line = Line([(xs[i], ymin), (xs[i], ymax)], crs=graticule_crs)
+        artists.append(plot(_line, ax=ax, crs=map_crs, **lineargs))
     for i in range(len(ys)):
-        _line = Line([(xmin, ys[i]), (xmax, ys[i])], crs=map_crs)
-        plot(_line, ax, **lineargs)
-    return
-
-def add_graticule_contour(ax: Axes, xs: Iterable[float], ys: Iterable[float],
-        map_crs: CRS, graticule_crs: CRS, nx: int=100, ny: int=100):
-    xmin, xmax = ax.get_xlim()
-    ymin, ymax = ax.get_ylim()
-    xmap = np.linspace(xmin, xmax, nx)
-    ymap = np.linspace(ymin, ymax, ny)
-    Xm, Ym = np.meshgrid(xmap, ymap)
-    Xg, Yg = map_crs.transform(graticule_crs, Ym, Ym)
-    ax.contour(Xm, Ym, abs(Xg), levels=xs, colors="k", linestyles="-")
-    ax.contour(Xm, Ym, Yg, levels=ys, colors="k", linestyles="-")
-
-    Xg_pm = Xg
-    Xg_pm[(abs(Xg)>10) & (abs(Xg)<170)] = np.nan
-    ax.contour(Xm, Ym, Xg_pm, levels=[0.0], colors="k", linestyles="-")
-
-    return
+        _line = Line([(xmin, ys[i]), (xmax, ys[i])], crs=graticule_crs)
+        artists.append(plot(_line, ax=ax, crs=map_crs, **lineargs))
+    return artists
 
 def isbetween(x: float, a: float, b: float) -> bool:
     return (a < x < b) or (b < x < a)
@@ -100,10 +99,33 @@ def isbetween(x: float, a: float, b: float) -> bool:
 def froot(f: float, a: float, b: float) -> float:
     return scipy.optimize.brentq(f, a, b)
 
-def label_ticks(ax: Axes, xs: Iterable[float], ys: Iterable[float],
-        map_crs: CRS=Cartesian, graticule_crs: CRS=SphericalEarth,
+@default_current_axes
+def label_ticks(xs: Iterable[float], ys: Iterable[float],
+        ax: Axes=None, map_crs: CRS=Cartesian, graticule_crs: CRS=SphericalEarth,
         textargs=None, tickargs=None,
-        x_suffix: str="\u00b0E", y_suffix: str="\u00b0N"):
+        x_suffix: str="E", y_suffix: str="N"):
+    """ Label graticule lines, returning a list if Text objects.
+
+    Parameters
+    ----------
+    xs : Iterable[float],
+    ys : Iterable[float]
+        Easting and northing componenets of labels, in `graticule_crs`
+    ax : Axes, optional
+        Axes to draw to (default current Axes)
+    map_crs : karta.crs.CRS, optional
+        CRS giving the display projection (default Cartesian)
+    graticule_crs : karta.crs.CRS, optional
+        CRS giving the graticule/label projection (default SphericalEarth)
+    textargs : dict, optional
+        Keyword arguments to pass to plt.text
+    tickargs : dict, optional
+        Keyword arguments to pass to plt.plot
+    x_suffix : str, optional
+        Suffix for eastings labels (default 'E')
+    y_suffix : str, optional
+        Suffix to pass to northings labels (default 'N')
+    """
 
     if textargs is None:
         textargs = dict()
@@ -140,7 +162,7 @@ def label_ticks(ax: Axes, xs: Iterable[float], ys: Iterable[float],
     for x in xs:
         if isbetween(x, bbox[2][0], bbox[3][0]):
             ticks["xticks"].append((froot(lambda xt:
-                                          map_crs.transform(graticule_crs, xt, ymax)[0]-y,
+                                          map_crs.transform(graticule_crs, xt, ymax)[0]-x,
                                           xmin, xmax),
                                     ymax,
                                     "{0}{1}".format(x, x_suffix)))
@@ -190,18 +212,18 @@ def label_ticks(ax: Axes, xs: Iterable[float], ys: Iterable[float],
                                     "{0}{1}".format(y, y_suffix)))
 
     # Update map
+    txts = []
     for pt in ticks["xticks"]:
         ax.plot(pt[0], pt[1], **tickargs)
-        ax.text(pt[0], pt[1], pt[2], **textargs)
+        txts.append(ax.text(pt[0], pt[1], pt[2], **textargs))
 
     for pt in ticks["yticks"]:
         ax.plot(pt[0], pt[1], **tickargs)
-        ax.text(pt[0], pt[1], pt[2], **textargs)
+        txts.append(ax.text(pt[0], pt[1], pt[2], **textargs))
 
-    # # Apply to the Axes
     ax.set_xticks([])
     ax.set_yticks([])
-    return
+    return txts
 
 def _get_plotting_func(geom: Union[Geometry, Iterable[Geometry]]) -> Callable:
     if isinstance(geom, list):

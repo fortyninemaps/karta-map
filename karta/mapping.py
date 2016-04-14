@@ -226,6 +226,8 @@ def label_ticks(xs: Iterable[float], ys: Iterable[float],
     return txts
 
 def _get_plotting_func(geom: Union[Geometry, Iterable[Geometry]]) -> Callable:
+    if isinstance(geom, RegularGrid):
+        return plot_grid
     if isinstance(geom, list):
         return _get_plotting_func(geom[0])
     if not hasattr(geom, "_geotype"):
@@ -240,7 +242,7 @@ def _get_plotting_func(geom: Union[Geometry, Iterable[Geometry]]) -> Callable:
         return plot_polygon
     raise TypeError("Invalid geotype: {0}".format(geom._geotype))
 
-def plot(geom: Union[Geometry, Iterable[Geometry]], *args, **kwargs):
+def plot(geom: Union[Union[Geometry, RegularGrid], Iterable[Union[Geometry, RegularGrid]]], *args, **kwargs):
     """ Metafunction that dispatches to the correct plotting routine. """
     func = _get_plotting_func(geom)
     return func(geom, *args, **kwargs)

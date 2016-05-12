@@ -3,6 +3,8 @@ karta.mapping is an extension module for the karta package that provides a
 (thin) wrapper around matplotlib for easily plotting geogrphaical data.
 """
 
+import functools
+
 import scipy.optimize
 import numpy as np
 
@@ -15,9 +17,11 @@ from .crs import CRS, Cartesian, SphericalEarth
 
 def default_current_axes(wrappedfunc: Callable):
     """ Decorator to set current Axes as default ax in plotting functions """
+    @functools.wraps(wrappedfunc)
     def replacementfunc(*args, **kwargs):
         if "ax" not in kwargs:
-            # don't use dict.setdefault because don't want gca() to be evaluated
+            # don't use dict.setdefault because don't want gca() to be
+            # evaluated unconditionally
             kwargs["ax"] = gca()
         return wrappedfunc(*args, **kwargs)
     return replacementfunc
@@ -25,6 +29,7 @@ def default_current_axes(wrappedfunc: Callable):
 def recurse_iterables(wrappedfunc: Callable):
     """ Decorator to generate functions that apply themselve recursively to
     iterable non-Geometry inputs. """
+    @functools.wraps(wrappedfunc)
     def replacementfunc(main_arg, *args, **kwargs):
         if not isinstance(main_arg, Geometry) and hasattr(main_arg, "__iter__"):
             return [replacementfunc(a, *args, **kwargs) for a in main_arg]
@@ -234,12 +239,16 @@ def _get_plotting_func(geom: Union[Geometry, Iterable[Geometry]]) -> Callable:
         raise TypeError("Invalid input type: {0}".format(type(geom)))
     if geom._geotype == "Point":
         return plot_point
-    if geom._geotype == "Multipoint":
-        return plot_multipoint
     if geom._geotype == "Line":
         return plot_line
     if geom._geotype == "Polygon":
         return plot_polygon
+    if geom._geotype == "Multipoint":
+        return plot_multipoint
+    if geom._geotype == "Multiline":
+        return plot_multiline
+    if geom._geotype == "Multipolygon":
+        return plot_multipolygon
     raise TypeError("Invalid geotype: {0}".format(geom._geotype))
 
 def plot(geom: Union[Union[Geometry, RegularGrid], Iterable[Union[Geometry, RegularGrid]]], *args, **kwargs):
@@ -254,16 +263,6 @@ def plot_point(geom: Union[Point, Iterable[Point]], *args,
     """ Plot a Point geometry, projected to the coordinate system `crs` """
     kwargs.setdefault("marker", ".")
     x, y = geom.get_vertex(crs=crs)
-    return ax.plot(x, y, *args, **kwargs)
-
-@default_current_axes
-@recurse_iterables
-def plot_multipoint(geom: Union[Multipoint, Iterable[Multipoint]], *args,
-        ax: Axes=None, crs: CRS=None, **kwargs):
-    """ Plot a Line geometry, projected to the coordinate system `crs` """
-    kwargs.setdefault("linestyle", "none")
-    kwargs.setdefault("marker", ".")
-    x, y = geom.get_coordinate_lists(crs=crs)
     return ax.plot(x, y, *args, **kwargs)
 
 @default_current_axes
@@ -283,6 +282,39 @@ def plot_polygon(geom: Union[Polygon, Iterable[Polygon]], *args,
     kwargs.setdefault("edgecolor", "black")
     x, y = geom.get_coordinate_lists(crs=crs)
     return ax.fill(x, y, *args, **kwargs)
+
+@default_current_axes
+def plot_multipoint(geom: Union[Multipoint, Iterable[Multipoint]], *args,
+        ax: Axes=None, crs: CRS=None, **kwargs):
+    """ Plot a Line geometry, projected to the coordinate system `crs` """
+    kwargs.setdefault("linestyle", "none")
+    kwargs.setdefault("marker", ".")
+    x, y = geom.get_coordinate_lists(crs=crs)
+    return ax.plot(x, y, *args, **kwargs)
+
+@default_current_axes
+def plot_multiline(geom: Union[Multipoint, Iterable[Multipoint]], *args,
+        ax: Axes=None, crs: CRS=None, **kwargs):
+    """ Plot a Line geometry, projected to the coordinate system `crs` """
+    kwargs.setdefault("linestyle", "none")
+    kwargs.setdefault("marker", ".")
+    out = []
+    for line in geom:
+        x, y = line.get_coordinate_lists(crs=crs)
+        out.append(ax.plot(x, y, *args, **kwargs))
+    return out
+
+@default_current_axes
+def plot_multipolygon(geom: Union[Multipoint, Iterable[Multipoint]], *args,
+        ax: Axes=None, crs: CRS=None, **kwargs):
+    """ Plot a Line geometry, projected to the coordinate system `crs` """
+    kwargs.setdefault("facecolor", "none")
+    kwargs.setdefault("edgecolor", "black")
+    out = []
+    for polygon in geom:
+        x, y = polygon.get_coordinate_lists(crs=crs)
+        out.append(ax.fill(x, y, *args, **kwargs))
+    return out
 
 @default_current_axes
 def plot_grid(grid: RegularGrid, ax: Axes=None, crs: CRS=None, **kwargs):

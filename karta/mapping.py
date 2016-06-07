@@ -48,6 +48,30 @@ def get_axes_extent(ax: Axes, ax_crs: CRS, crs: CRS=SphericalEarth):
     ul = ax_crs.transform(crs, xl, yt)
     return Polygon([ll, lr, ur, ul], crs=crs)
 
+def get_axes_limits(ax: Axes, ax_crs: CRS, crs: CRS=SphericalEarth):
+    """ Get the limits of the window covered by an Axes in another coordinate
+    system. """
+    xl, xr = ax.get_xlim()
+    yb, yt = ax.get_ylim()
+    ax_bbox = get_axes_extent(ax, ax_crs, crs=crs)
+
+    # Minimize bottom spine
+    x_ = scipy.optimize.fminbound(lambda x: ax_crs.transform(crs, x, yb)[1], xl, xr)
+    ymin = ax_crs.transform(crs, x_, yb)[1]
+
+    # Maximize top spine
+    x_ = scipy.optimize.fminbound(lambda x: -ax_crs.transform(crs, x, yt)[1], xl, xr)
+    ymax = ax_crs.transform(crs, x_, yt)[1]
+
+    # Minimize left spine
+    y_ = scipy.optimize.fminbound(lambda y: ax_crs.transform(crs, xl, y)[0], yb, yt)
+    xmin = ax_crs.transform(crs, xl, y_)[0]
+
+    # Maximize right spine
+    y_ = scipy.optimize.fminbound(lambda y: -ax_crs.transform(crs, xr, y)[0], yb, yt)
+    xmax = ax_crs.transform(crs, xr, y_)[0]
+    return xmin, xmax, ymin, ymax
+
 def geodesic(pt0: Point, pt1: Point, n=20):
     """ Return a Line representing the geodesic path between two points, approximated by `n` segments. """
     i = 0
@@ -63,9 +87,9 @@ def geodesic(pt0: Point, pt1: Point, n=20):
     return Line(points)
 
 @default_current_axes
-def add_graticule(xs: Iterable[float], ys: Iterable[float],
-        ax: Axes=None, map_crs: CRS=Cartesian, graticule_crs: CRS=SphericalEarth,
-        lineargs=None):
+def add_graticule(xs: Iterable[float], ys: Iterable[float], ax: Axes=None,
+        map_crs: CRS=Cartesian, graticule_crs: CRS=SphericalEarth,
+        nsegments=25, lineargs=None):
     """ Adds a map graticule.
 
     Parameters
@@ -79,22 +103,28 @@ def add_graticule(xs: Iterable[float], ys: Iterable[float],
         CRS defining the display projection (default Cartesian)
     graticule_crs : karta.crs.CRS, optional
         CRS defining the graticule projection (default SphericalEarth)
+    nsegments : int, optional
+        Number of segments to use to approximate curving graticule lines
     lineargs : dict, optional
         Arguments passed to karta.mapping.plot while drawing graticule lines
     """
     if lineargs is None:
-        lineargs = dict(color="k", linewidth=0.5)
+        lineargs = dict()
 
-    bbox = get_axes_extent(ax, map_crs, graticule_crs)
-    x, y = bbox.get_coordinate_lists(crs=graticule_crs)
-    xmin, xmax = min(x), max(x)
-    ymin, ymax = min(y), max(y)
+    lineargs.setdefault("color", "black")
+    lineargs.setdefault("linewidth", 0.5)
+
+    xmin, xmax, ymin, ymax = get_axes_limits(ax, map_crs, crs=graticule_crs)
     artists = []
     for i in range(len(xs)):
-        _line = Line([(xs[i], ymin), (xs[i], ymax)], crs=graticule_crs)
+        coords = zip(np.linspace(xs[i], xs[i], nsegments+1),
+                     np.linspace(ymin, ymax, nsegments+1))
+        _line = Line(coords, crs=graticule_crs)
         artists.append(plot(_line, ax=ax, crs=map_crs, **lineargs))
     for i in range(len(ys)):
-        _line = Line([(xmin, ys[i]), (xmax, ys[i])], crs=graticule_crs)
+        coords = zip(np.linspace(xmin, xmax, nsegments+1),
+                     np.linspace(ys[i], ys[i], nsegments+1))
+        _line = Line(coords, crs=graticule_crs)
         artists.append(plot(_line, ax=ax, crs=map_crs, **lineargs))
     return artists
 
@@ -105,8 +135,8 @@ def froot(f: float, a: float, b: float) -> float:
     return scipy.optimize.brentq(f, a, b)
 
 @default_current_axes
-def label_ticks(xs: Iterable[float], ys: Iterable[float],
-        ax: Axes=None, map_crs: CRS=Cartesian, graticule_crs: CRS=SphericalEarth,
+def label_ticks(xs: Iterable[float], ys: Iterable[float], ax: Axes=None,
+        map_crs: CRS=Cartesian, graticule_crs: CRS=SphericalEarth,
         textargs=None, tickargs=None,
         x_suffix: str="E", y_suffix: str="N"):
     """ Label graticule lines, returning a list if Text objects.
@@ -296,8 +326,6 @@ def plot_multipoint(geom: Union[Multipoint, Iterable[Multipoint]], *args,
 def plot_multiline(geom: Union[Multipoint, Iterable[Multipoint]], *args,
         ax: Axes=None, crs: CRS=None, **kwargs):
     """ Plot a Line geometry, projected to the coordinate system `crs` """
-    kwargs.setdefault("linestyle", "none")
-    kwargs.setdefault("marker", ".")
     out = []
     for line in geom:
         x, y = line.get_coordinate_lists(crs=crs)
@@ -324,7 +352,7 @@ def plot_grid(grid: RegularGrid, ax: Axes=None, crs: CRS=None, **kwargs):
     # compute the pixels that can actually be displayed
     _, _, width, height = ax.bbox.bounds
     ny, nx = grid.size
-    r = (max(int(ny//height), 1), max(int(nx//width), 1))
+    r = (max(int(0.75*ny//height), 1), max(int(0.75*nx//width), 1))
     return ax.imshow(grid[::r[0],::r[1]], **kwargs)
 
 def _position_over(artist: Artist) -> Tuple[float, float]:

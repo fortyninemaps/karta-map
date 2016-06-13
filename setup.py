@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 setup(
-        name='karta_map',
+        name='karta_plot',
         version='0.0a1',
         packages=find_packages(),
         author="Nat Wilson",

@@ -9,7 +9,7 @@ import scipy.optimize
 import numpy as np
 
 from typing import Union, Iterable, Tuple, Callable
-from matplotlib.pyplot import gca, sci, Axes, Artist
+from matplotlib.pyplot import gca, sci, Axes, Artist, cm
 
 from .vector import Point, Multipoint, Line, Polygon, Geometry
 from .raster import RegularGrid
@@ -348,7 +348,7 @@ def plot_multipolygon(geom: Union[Multipoint, Iterable[Multipoint]], *args,
 def plot_grid(grid: RegularGrid, ax: Axes=None, crs: CRS=None, **kwargs):
     kwargs.setdefault("origin", "bottom")
     kwargs.setdefault("extent", grid.get_extent(crs=crs))
-    kwargs.setdefault("cmap", plt.cm.binary_r)
+    kwargs.setdefault("cmap", cm.binary_r)
 
     # compute the pixels that can actually be displayed
     _, _, width, height = ax.bbox.bounds

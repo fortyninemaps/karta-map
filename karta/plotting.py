@@ -354,7 +354,11 @@ def plot_grid(grid: RegularGrid, ax: Axes=None, crs: CRS=None, **kwargs):
     _, _, width, height = ax.bbox.bounds
     ny, nx = grid.size
     r = (max(int(0.75*ny//height), 1), max(int(0.75*nx//width), 1))
-    im = ax.imshow(grid[::r[0],::r[1]], **kwargs)
+    arr = grid[::r[0],::r[1]]
+
+    if not np.isnan(grid.nodata):
+        arr[arr==grid.nodata] = np.nan
+    im = ax.imshow(arr, **kwargs)
     if ax == gca():
         sci(im)
     return im

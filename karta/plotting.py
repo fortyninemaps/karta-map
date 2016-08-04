@@ -11,7 +11,8 @@ import numpy as np
 from typing import Union, Iterable, Tuple, Callable
 from matplotlib.pyplot import gca, sci, Axes, Artist, cm
 
-from .vector import Point, Multipoint, Line, Polygon, Geometry
+from .vector import Point, Line, Polygon, Geometry
+from .vector import Multipoint, Multiline, Multipolygon
 from .raster import RegularGrid
 from .crs import CRS, Cartesian, SphericalEarth
 
@@ -323,7 +324,7 @@ def plot_multipoint(geom: Union[Multipoint, Iterable[Multipoint]], *args,
     return ax.plot(x, y, *args, **kwargs)
 
 @default_current_axes
-def plot_multiline(geom: Union[Multipoint, Iterable[Multipoint]], *args,
+def plot_multiline(geom: Union[Multiline, Iterable[Multiline]], *args,
         ax: Axes=None, crs: CRS=None, **kwargs):
     """ Plot a Line geometry, projected to the coordinate system `crs` """
     out = []
@@ -333,7 +334,7 @@ def plot_multiline(geom: Union[Multipoint, Iterable[Multipoint]], *args,
     return out
 
 @default_current_axes
-def plot_multipolygon(geom: Union[Multipoint, Iterable[Multipoint]], *args,
+def plot_multipolygon(geom: Union[Multipolygon, Iterable[Multipolygon]], *args,
         ax: Axes=None, crs: CRS=None, **kwargs):
     """ Plot a Line geometry, projected to the coordinate system `crs` """
     kwargs.setdefault("facecolor", "none")

@@ -1,8 +1,8 @@
 from setuptools import setup, find_packages
 
 setup(
-        name='karta_plot',
-        version='0.0a1',
+        name='mapping',
+        version='0.0a2',
         packages=find_packages(),
         author="Nat Wilson",
         description="Mapping utilities for karta",

@@ -1,6 +1,6 @@
 """
-karta.mapping is an extension module for the karta package that provides a
-(thin) wrapper around matplotlib for easily plotting geogrphaical data.
+mapping is a module for plotting vector and raster objects from the karta
+package using matplotlib
 """
 
 import functools
@@ -11,10 +11,10 @@ import numpy as np
 from typing import Union, Iterable, Tuple, Callable
 from matplotlib.pyplot import gca, sci, Axes, Artist, cm
 
-from .vector import Point, Line, Polygon, Geometry
-from .vector import Multipoint, Multiline, Multipolygon
-from .raster import RegularGrid
-from .crs import CRS, Cartesian, SphericalEarth
+from karta.vector import Point, Line, Polygon, Geometry
+from karta.vector import Multipoint, Multiline, Multipolygon
+from karta.raster import RegularGrid
+from karta.crs import CRS, Cartesian, SphericalEarth
 
 def default_current_axes(wrappedfunc: Callable):
     """ Decorator to set current Axes as default ax in plotting functions """

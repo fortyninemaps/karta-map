@@ -343,19 +343,53 @@ def plot_multipolygon(geom: Union[Multipolygon, Iterable[Multipolygon]], *args,
     return out
 
 @default_current_axes
-def plot_grid(grid: RegularGrid, ax: Axes=None, crs: CRS=None, **kwargs):
+def plot_grid(grid: RegularGrid, ax: Axes=None, crs: CRS=None, band: Union[int, tuple]=-1, **kwargs):
+    """ Plot a grid instance
+
+    Parameters
+    ----------
+    grid : RegularGrid
+        raster data to plot
+    ax : Axes, optional
+        Axes to plot to [default plt.gca()]
+    crs : CRS, optional
+        Currently not supported
+    band : int or tuple, optional
+        Band(s) to plot. If *grid* has three bands, by default the three are
+        plotted in false colour as RGB channels. Otherwise, the first band is
+        plotted by default. If *band* is a tuple, it must have three integer
+        elements.
+
+    Notes
+    -----
+    Additional arguments are passed to `matplotlib.pyplot.imshow`
+    """
     kwargs.setdefault("origin", "bottom")
     kwargs.setdefault("extent", grid.get_extent(crs=crs))
     kwargs.setdefault("cmap", cm.binary_r)
 
+    if crs is not None and crs != grid.crs:
+        raise NotImplementedError("RegularGrid reprojection not supported")
+
     # compute the pixels that can actually be displayed
+    # be slightly generous by using a factor of 0.75 to avoid choosing too low
+    # of a resolution
     _, _, width, height = ax.bbox.bounds
     ny, nx = grid.size
     r = (max(int(0.75*ny//height), 1), max(int(0.75*nx//width), 1))
-    arr = grid[::r[0],::r[1]]
+    if band == -1:
+        if len(grid.bands) == 3 and (band == -1):
+            band = (0, 1, 2)
+        else:
+            band = 0
+    if isinstance(band, int):
+        arr = grid[::r[0],::r[1],band]
+        arr = np.ma.masked_equal(arr, grid.nodata)
+    else:
+        arr = np.dstack([grid[::r[0],::r[1],i] for i in band]).astype(np.float32)
+        arr = np.ma.masked_equal(arr, grid.nodata)
+        arr /= arr.max()
 
-    if not np.isnan(grid.nodata):
-        arr[arr==grid.nodata] = np.nan
     im = ax.imshow(arr, **kwargs)
     if ax == gca():
         sci(im)

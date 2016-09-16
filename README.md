@@ -1,12 +1,12 @@
-# karta.mapping
+# mapping
 
-This extension module adds *matplotlib* plotting functions to the *Karta*
-geospatial library.
+This module adds [*matplotlib*](https://github.com/matplotlib/matplotlib)
+plotting functions to the [*Karta* geospatial library](https://github.com/fortyninemaps/karta).
 
 ## Basic usage
 
 ```python
-from karta.mapping import plot, annotate
+from mapping import plot, annotate
 from karta.crs import WebMercator
 
 points = ...    # list of karta.Point objects
@@ -19,10 +19,10 @@ annotate(artist[0], "Study region", where="over")
 
 ## Dependencies
 
-`karta.mapping` is written in type-annotated Python, and therefore requires
-Python 3.
+`mapping` is written in type-annotated Python, and therefore requires Python 3.
 
-- [karta](http://www.ironicmtn.com/karta.html) ([Github](https://github.com/njwilson23/karta))
+- [karta](http://www.fortyninemaps.com/karta.html) ([Github](https://github.com/njwilson23/karta))
 - [matplotlib](http://www.matplotlib.org) ([Github](https://github.com/matplotlib/matplotlib))
 - [scipy](http://www.scipy.org/scipylib/index.html) ([Github](https://github.com/scipy/scipy))
-- [typing](http://pypi.python.org/pypi/typing/3.5.0) (Built-in for Python 3.5+)
+
+Versions of Python<3.5 additionally require the [typing](https://pypi.python.org/pypi/typing/) module.

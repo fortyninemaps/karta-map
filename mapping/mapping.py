@@ -254,25 +254,6 @@ def label_ticks(xs: Iterable[float], ys: Iterable[float], ax: Axes=None,
     ax.set_yticks([])
     return txts
 
-def _get_plotting_func(geom: Union[Geometry, Iterable[Geometry]]) -> Callable:
-    if isinstance(geom, RegularGrid):
-        return plot_grid
-    if not hasattr(geom, "_geotype"):
-        raise TypeError("Invalid input type: {0}".format(type(geom)))
-    if geom._geotype == "Point":
-        return plot_point
-    if geom._geotype == "Line":
-        return plot_line
-    if geom._geotype == "Polygon":
-        return plot_polygon
-    if geom._geotype == "Multipoint":
-        return plot_multipoint
-    if geom._geotype == "Multiline":
-        return plot_multiline
-    if geom._geotype == "Multipolygon":
-        return plot_multipolygon
-    raise TypeError("Invalid geotype: {0}".format(geom._geotype))
-
 def plot(geom: Union[Union[Geometry, RegularGrid], Iterable[Union[Geometry, RegularGrid]]], *args, **kwargs):
     """ Metafunction that dispatches to the correct plotting routine. """
     if isinstance(geom, list):
@@ -281,7 +262,24 @@ def plot(geom: Union[Union[Geometry, RegularGrid], Iterable[Union[Geometry, Regu
             results.append(plot(g, *args, **kwargs))
         return results
     else:
-        func = _get_plotting_func(geom)
+        if isinstance(geom, RegularGrid):
+            func = plot_grid
+        elif not hasattr(geom, "_geotype"):
+            raise TypeError("Invalid input type: {0}".format(type(geom)))
+        elif geom._geotype == "Point":
+            func = plot_point
+        elif geom._geotype == "Line":
+            func = plot_line
+        elif geom._geotype == "Polygon":
+            func = plot_polygon
+        elif geom._geotype == "Multipoint":
+            func = plot_multipoint
+        elif geom._geotype == "Multiline":
+            func = plot_multiline
+        elif geom._geotype == "Multipolygon":
+            func = plot_multipolygon
+        else:
+            raise TypeError("Invalid geotype: {0}".format(geom._geotype))
         return func(geom, *args, **kwargs)
 
 @default_current_axes

@@ -386,9 +386,11 @@ def plot_grid(grid: RegularGrid, ax: Axes=None, crs: CRS=None, band: Union[int, 
         arr = grid[::r[0],::r[1],band]
         arr = np.ma.masked_equal(arr, grid.nodata)
     else:
+        if len(band) not in (3, 4):
+            raise ValueError("bands must be RGB or RGBA (length 3 or 4)")
         arr = np.dstack([grid[::r[0],::r[1],i] for i in band]).astype(np.float32)
         arr = np.ma.masked_equal(arr, grid.nodata)
-        arr /= arr.max()
+        arr[:,:,:3] /= arr[:,:,:3].max()
 
     im = ax.imshow(arr, **kwargs)
     if ax == gca():

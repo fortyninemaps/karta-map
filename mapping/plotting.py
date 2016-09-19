@@ -1,19 +1,13 @@
-"""
-mapping is a module for plotting vector and raster objects from the karta
-package using matplotlib
-"""
-
 import functools
+from typing import Union, Iterable, Tuple, Callable
 
 import numpy as np
-
-from typing import Union, Iterable, Tuple, Callable
-from matplotlib.pyplot import gca, sci, Axes, Artist, cm
-
 from karta.vector import Point, Line, Polygon, Geometry
 from karta.vector import Multipoint, Multiline, Multipolygon
 from karta.raster import RegularGrid
 from karta.crs import CRS
+
+from matplotlib.pyplot import gca, sci, Axes, Artist, cm
 
 def default_current_axes(wrappedfunc: Callable):
     """ Decorator to set current Axes as default ax in plotting functions """

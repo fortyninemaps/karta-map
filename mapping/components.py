@@ -1,13 +1,13 @@
+from typing import Iterable
+
 import numpy as np
 import scipy.optimize
-
-from typing import Iterable
-from matplotlib.pyplot import Axes
-
 from karta.vector import Point, Line, Polygon
 from karta.crs import CRS, Cartesian, SphericalEarth
 
-from .plot import plot, default_current_axes
+from matplotlib.pyplot import Axes
+
+from .plotting import plot, default_current_axes
 
 def get_axes_extent(ax: Axes, ax_crs: CRS, crs: CRS=SphericalEarth):
     """ Get the extent of an Axes in geographical (or other) coordinates. """

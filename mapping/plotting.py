@@ -7,6 +7,8 @@ from karta.vector import Multipoint, Multiline, Multipolygon
 from karta.raster import RegularGrid
 from karta.crs import CRS
 
+import matplotlib.path
+import matplotlib.collections
 from matplotlib.pyplot import gca, sci, Axes, Artist, cm
 
 def default_current_axes(wrappedfunc: Callable):
@@ -99,22 +101,24 @@ def plot_multipoint(geom: Union[Multipoint, Iterable[Multipoint]], *args,
 def plot_multiline(geom: Union[Multiline, Iterable[Multiline]], *args,
         ax: Axes=None, crs: CRS=None, **kwargs):
     """ Plot a Line geometry, projected to the coordinate system `crs` """
-    out = []
-    for line in geom:
-        x, y = line.get_coordinate_lists(crs=crs)
-        out.append(ax.plot(x, y, *args, **kwargs))
-    return out
+    kwargs.setdefault("facecolors", "none")
+    kwargs.setdefault("edgecolors", "black")
+    paths = [matplotlib.path.Path(vertices.asarray()[:,:2], readonly=True)
+            for vertices in geom.vertices]
+    coll = matplotlib.collections.PathCollection(paths, *args, **kwargs)
+    ax.add_artist(coll)
+    return coll
 
 @default_current_axes
 def plot_multipolygon(geom: Union[Multipolygon, Iterable[Multipolygon]], *args,
         ax: Axes=None, crs: CRS=None, **kwargs):
     """ Plot a Line geometry, projected to the coordinate system `crs` """
-    kwargs.setdefault("facecolor", "none")
-    kwargs.setdefault("edgecolor", "black")
-    out = []
-    for polygon in geom:
-        x, y = polygon.get_coordinate_lists(crs=crs)
-        out.append(ax.fill(x, y, *args, **kwargs))
+    kwargs.setdefault("facecolors", "none")
+    kwargs.setdefault("edgecolors", "black")
+    paths = [matplotlib.path.Path(vertices.asarray()[:,:2], closed=True, readonly=True)
+            for vertices in geom.vertices]
+    coll = matplotlib.collections.PathCollection(paths, *args, **kwargs)
+    ax.add_artist(coll)
     return out
 
 @default_current_axes

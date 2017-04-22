@@ -103,8 +103,8 @@ def plot_multiline(geom: Union[Multiline, Iterable[Multiline]], *args,
     """ Plot a Line geometry, projected to the coordinate system `crs` """
     kwargs.setdefault("facecolors", "none")
     kwargs.setdefault("edgecolors", "black")
-    paths = [matplotlib.path.Path(vertices.asarray()[:,:2], readonly=True)
-            for vertices in geom.get_vertices(crs=crs)]
+    paths = [matplotlib.path.Path(vertices[:,:2], readonly=True)
+             for vertices in geom.get_vertices(crs=crs)]
     coll = matplotlib.collections.PathCollection(paths, *args, **kwargs)
     ax.add_artist(coll)
     return coll
@@ -112,11 +112,11 @@ def plot_multiline(geom: Union[Multiline, Iterable[Multiline]], *args,
 @default_current_axes
 def plot_multipolygon(geom: Union[Multipolygon, Iterable[Multipolygon]], *args,
         ax: Axes=None, crs: CRS=None, **kwargs):
-    """ Plot a Line geometry, projected to the coordinate system `crs` """
+    """ Plot a Multipolygon geometry, projected to the coordinate system `crs` """
     kwargs.setdefault("facecolors", "none")
     kwargs.setdefault("edgecolors", "black")
-    paths = [matplotlib.path.Path(vertices.asarray()[:,:2], closed=True, readonly=True)
-            for vertices in geom.get_vertices(crs=crs)]
+    paths = [matplotlib.path.Path(vertices[0][:,:2], closed=True, readonly=True)
+             for vertices in geom.get_vertices(crs=crs)]
     coll = matplotlib.collections.PathCollection(paths, *args, **kwargs)
     ax.add_artist(coll)
     return out

@@ -104,7 +104,7 @@ def plot_multiline(geom: Union[Multiline, Iterable[Multiline]], *args,
     kwargs.setdefault("facecolors", "none")
     kwargs.setdefault("edgecolors", "black")
     paths = [matplotlib.path.Path(vertices.asarray()[:,:2], readonly=True)
-            for vertices in geom.vertices]
+            for vertices in geom.get_vertices(crs=crs)]
     coll = matplotlib.collections.PathCollection(paths, *args, **kwargs)
     ax.add_artist(coll)
     return coll
@@ -116,7 +116,7 @@ def plot_multipolygon(geom: Union[Multipolygon, Iterable[Multipolygon]], *args,
     kwargs.setdefault("facecolors", "none")
     kwargs.setdefault("edgecolors", "black")
     paths = [matplotlib.path.Path(vertices.asarray()[:,:2], closed=True, readonly=True)
-            for vertices in geom.vertices]
+            for vertices in geom.get_vertices(crs=crs)]
     coll = matplotlib.collections.PathCollection(paths, *args, **kwargs)
     ax.add_artist(coll)
     return out

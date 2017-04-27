@@ -67,7 +67,7 @@ def plot_point(geom: Union[Point, Iterable[Point]], *args,
         ax: Axes=None, crs: CRS=None, **kwargs):
     """ Plot a Point geometry, projected to the coordinate system `crs` """
     kwargs.setdefault("marker", ".")
-    x, y = geom.get_vertex(crs=crs)
+    x, y = geom.get_vertex(crs=crs)[:2]
     return ax.plot(x, y, *args, **kwargs)
 
 @default_current_axes
@@ -119,7 +119,7 @@ def plot_multipolygon(geom: Union[Multipolygon, Iterable[Multipolygon]], *args,
              for vertices in geom.get_vertices(crs=crs)]
     coll = matplotlib.collections.PathCollection(paths, *args, **kwargs)
     ax.add_artist(coll)
-    return out
+    return coll
 
 @default_current_axes
 def plot_grid(grid: RegularGrid, ax: Axes=None, crs: CRS=None, band: Union[int, tuple]=-1, **kwargs):

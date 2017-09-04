@@ -67,7 +67,7 @@ def plot_point(geom: Union[Point, Iterable[Point]], *args,
         ax: Axes=None, crs: CRS=None, **kwargs):
     """ Plot a Point geometry, projected to the coordinate system `crs` """
     kwargs.setdefault("marker", ".")
-    x, y = geom.get_vertex(crs=crs)[:2]
+    x, y = geom.vertex(crs=crs)[:2]
     return ax.plot(x, y, *args, **kwargs)
 
 @default_current_axes
@@ -75,7 +75,7 @@ def plot_point(geom: Union[Point, Iterable[Point]], *args,
 def plot_line(geom: Union[Line, Iterable[Line]], *args,
         ax: Axes=None, crs: CRS=None, **kwargs):
     """ Plot a Line geometry, projected to the coordinate system `crs` """
-    x, y = geom.get_coordinate_lists(crs=crs)
+    x, y = geom.coords(crs=crs)
     return ax.plot(x, y, *args, **kwargs)
 
 @default_current_axes
@@ -85,7 +85,7 @@ def plot_polygon(geom: Union[Polygon, Iterable[Polygon]], *args,
     """ Plot a Polygon geometry, projected to the coordinate system `crs` """
     kwargs.setdefault("facecolor", "none")
     kwargs.setdefault("edgecolor", "black")
-    x, y = geom.get_coordinate_lists(crs=crs)
+    x, y = geom.coords(crs=crs)
     return ax.fill(x, y, *args, **kwargs)
 
 @default_current_axes
@@ -94,7 +94,7 @@ def plot_multipoint(geom: Union[Multipoint, Iterable[Multipoint]], *args,
     """ Plot a Line geometry, projected to the coordinate system `crs` """
     kwargs.setdefault("linestyle", "none")
     kwargs.setdefault("marker", ".")
-    x, y = geom.get_coordinate_lists(crs=crs)
+    x, y = geom.coords(crs=crs)
     return ax.plot(x, y, *args, **kwargs)
 
 @default_current_axes
@@ -104,7 +104,7 @@ def plot_multiline(geom: Union[Multiline, Iterable[Multiline]], *args,
     kwargs.setdefault("facecolors", "none")
     kwargs.setdefault("edgecolors", "black")
     paths = [matplotlib.path.Path(vertices[:,:2], readonly=True)
-             for vertices in geom.get_vertices(crs=crs)]
+             for vertices in geom.vertices(crs=crs)]
     coll = matplotlib.collections.PathCollection(paths, *args, **kwargs)
     ax.add_artist(coll)
     return coll
@@ -116,7 +116,7 @@ def plot_multipolygon(geom: Union[Multipolygon, Iterable[Multipolygon]], *args,
     kwargs.setdefault("facecolors", "none")
     kwargs.setdefault("edgecolors", "black")
     paths = [matplotlib.path.Path(vertices[0][:,:2], closed=True, readonly=True)
-             for vertices in geom.get_vertices(crs=crs)]
+             for vertices in geom.vertices(crs=crs)]
     coll = matplotlib.collections.PathCollection(paths, *args, **kwargs)
     ax.add_artist(coll)
     return coll
@@ -144,7 +144,7 @@ def plot_grid(grid: RegularGrid, ax: Axes=None, crs: CRS=None, band: Union[int, 
     Additional arguments are passed to `matplotlib.pyplot.imshow`
     """
     kwargs.setdefault("origin", "bottom")
-    kwargs.setdefault("extent", grid.get_extent(crs=crs))
+    kwargs.setdefault("extent", grid.extent(crs=crs))
     kwargs.setdefault("cmap", cm.binary_r)
 
     if crs is not None and crs != grid.crs:
